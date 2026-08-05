@@ -1,0 +1,31 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Backend runtime data — never commit secrets, the database, or uploaded
+# media. server/uploads/ is ~1.1GB of real photos/video; it needs to be
+# copied to the server separately when deploying (rsync/scp), not via git.
+.env
+server/data/
+server/uploads/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
