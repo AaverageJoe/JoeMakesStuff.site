@@ -117,7 +117,12 @@ npm start       # builds + starts the server, which then also serves dist/ itsel
 `npm start` runs everything as a single Node process on `PORT` (default 4000) — put it behind
 Nginx/Caddy for HTTPS and your domain, or run it directly if your host handles TLS for you. Use a
 process manager (`pm2`, `systemd`, Docker's own restart policy) to keep it running and restart it on
-reboot — this repo doesn't include one, since that's specific to whatever host you pick.
+reboot.
+
+For a Raspberry Pi specifically, `deploy/setup-pi.sh` automates all of this (Node, Caddy, the
+systemd service, the reverse proxy) in one run; `deploy/setup-kiosk.sh` sets up a touchscreen to
+auto-launch `/dashboard` fullscreen on boot; `deploy/update.sh` pulls, rebuilds, and restarts for
+later updates. Read through a script before running it — see the comments at the top of each.
 
 Make sure `.env` (with your real `ADMIN_PASSWORD`) and the `server/data/` and `server/uploads/`
 folders travel with the deploy and persist across restarts/redeploys — they're not build artifacts,

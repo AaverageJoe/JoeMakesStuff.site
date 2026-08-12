@@ -35,7 +35,14 @@ function applyFavicon(url) {
 }
 
 function applyBackground(color) {
-  document.documentElement.style.setProperty('--bg', color || '#0b0c0e')
+  // No custom colour set — remove any inline override so the theme's own
+  // :root/[data-theme] values apply, instead of permanently shadowing them
+  // with a hardcoded fallback that'd block the light/dark toggle.
+  if (color) {
+    document.documentElement.style.setProperty('--bg', color)
+  } else {
+    document.documentElement.style.removeProperty('--bg')
+  }
 }
 
 export function SettingsProvider({ children }) {

@@ -1,7 +1,22 @@
 .admin-shell {
+  /* Admin keeps its own fixed dark theme regardless of the public site's
+     light/dark toggle — :root's CSS variables are global and shared, so
+     without this override the admin panel would flip themes along with
+     the public site, which isn't the goal here. */
+  --bg: #0b0c0e;
+  --bg-alt: #131417;
+  --card: #17181c;
+  --border: #26282e;
+  --text: #f2f1ec;
+  --text-dim: #a3a5ac;
+  --accent: #ff5a36;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  font-family: var(--font-body);
 }
 
 .admin-loading {

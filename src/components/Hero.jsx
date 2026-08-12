@@ -1,8 +1,11 @@
 import { Link } from '../router'
 import { useSettings } from '../settings'
+import { useCopy } from '../copy'
+import SelfDrawingLogo from './SelfDrawingLogo'
 
 export default function Hero() {
   const { settings } = useSettings()
+  const { copy } = useCopy()
 
   return (
     <section id="top" className="hero">
@@ -13,19 +16,21 @@ export default function Hero() {
         </>
       )}
       <div className="container hero-inner">
-        <div className="eyebrow">Creative Technology Studio</div>
-        <h1>Joe.MakesStuff</h1>
-        <p className="lede">
-          I design and build the technology behind interactive exhibits, brand activations and
-          rapid prototypes — blending hardware, software and fabrication to turn ideas into
-          working experiences.
-        </p>
+        <div className="eyebrow">{copy.hero_eyebrow}</div>
+        <h1 className="hero-signature-heading">
+          <Link className="hero-signature" to="/#top">
+            <span className="sr-only">Joe.</span>
+            <SelfDrawingLogo className="signature-svg" />
+            <span className="signature-rest">MakesStuff</span>
+          </Link>
+        </h1>
+        <p className="lede">{copy.hero_lede}</p>
         <div className="hero-cta">
           <a className="btn btn-primary" href="#work">
-            See featured work
+            {copy.hero_cta_primary}
           </a>
           <Link className="btn btn-ghost" to="/contact">
-            Get in touch
+            {copy.hero_cta_secondary}
           </Link>
         </div>
       </div>

@@ -1,23 +1,26 @@
-import { ABOUT_INTRO, ABOUT_TITLE, EXPERIENCE, SKILLS } from '../data/content'
+import { EXPERIENCE, SKILLS } from '../data/content'
 import { useInView } from '../useInView'
+import { useCopy } from '../copy'
 
 export default function About() {
+  const { copy } = useCopy()
+
   return (
     <section id="about">
       <div className="container">
         <div className="section-head">
-          <div className="eyebrow">About</div>
-          <h2>Joe Allison</h2>
-          <p className="about-title">{ABOUT_TITLE}</p>
+          <div className="eyebrow">{copy.about_eyebrow}</div>
+          <h2>{copy.about_heading}</h2>
+          <p className="about-title">{copy.about_title}</p>
         </div>
 
         <div className="about-grid">
           <div className="about-intro">
-            <p className="about-lede">{ABOUT_INTRO}</p>
+            <p className="about-lede">{copy.about_intro}</p>
           </div>
 
           <div>
-            <h3 style={{ fontSize: 18, marginBottom: 20 }}>Experience</h3>
+            <h3 style={{ fontSize: 18, marginBottom: 20 }}>{copy.about_experience_heading}</h3>
             <ul className="timeline">
               {EXPERIENCE.map((item) => (
                 <li key={`${item.org}-${item.year}`}>
@@ -30,16 +33,16 @@ export default function About() {
           </div>
         </div>
 
-        <SkillsSection />
+        <SkillsSection heading={copy.about_skills_heading} />
       </div>
     </section>
   )
 }
 
-function SkillsSection() {
+function SkillsSection({ heading }) {
   return (
     <div className="skills-section">
-      <h3 style={{ fontSize: 18, marginBottom: 28 }}>Skills</h3>
+      <h3 style={{ fontSize: 18, marginBottom: 28 }}>{heading}</h3>
       <div className="skills-grid">
         {SKILLS.map((group) => (
           <SkillGroup key={group.category} group={group} />

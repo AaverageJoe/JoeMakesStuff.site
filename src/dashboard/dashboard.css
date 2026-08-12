@@ -1,0 +1,349 @@
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0c0e;
+}
+
+.dashboard {
+  --bg: #0b0c0e;
+  --card: #17181c;
+  --border: #26282e;
+  --text: #f2f1ec;
+  --text-dim: #a3a5ac;
+  --accent: #ff5a36;
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100vw;
+  padding: clamp(14px, 2.2vh, 28px) clamp(16px, 2.5vw, 36px);
+  background:
+    linear-gradient(var(--bg), var(--bg)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 32px);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+.dashboard * {
+  box-sizing: border-box;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+  margin-bottom: clamp(12px, 2vh, 24px);
+}
+
+.dashboard-logo {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(18px, 2.4vw, 28px);
+  letter-spacing: -0.01em;
+}
+
+.dashboard-logo-dot {
+  color: var(--accent);
+}
+
+.dashboard-clock {
+  text-align: right;
+}
+
+.dashboard-time {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(20px, 3vw, 34px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.dashboard-date {
+  color: var(--text-dim);
+  font-size: clamp(11px, 1.2vw, 14px);
+  margin-top: 2px;
+}
+
+.dashboard-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: clamp(14px, 1.8vw, 20px);
+}
+
+.dashboard-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: clamp(10px, 1.4vw, 18px);
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: clamp(12px, 1.6vw, 22px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stat-label {
+  color: var(--text-dim);
+  font-size: clamp(10px, 1vw, 13px);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: clamp(4px, 0.8vh, 10px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-value {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(20px, 2.6vw, 38px);
+  line-height: 1.1;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-sub {
+  color: var(--text-dim);
+  font-size: clamp(10px, 1vw, 13px);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-card {
+  border: 1px solid var(--border);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.status-card:hover,
+.status-card:active {
+  background: #1d1e23;
+}
+
+.status-online {
+  border-color: #1f6b3a;
+}
+
+.status-online .status-value {
+  color: #3ddc74;
+}
+
+.status-offline {
+  border-color: #7a2c1c;
+}
+
+.status-offline .status-value {
+  color: #ff4d4d;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.online {
+  background: #3ddc74;
+  box-shadow: 0 0 10px #3ddc74;
+}
+
+.status-dot.offline {
+  background: #ff4d4d;
+  box-shadow: 0 0 10px #ff4d4d;
+}
+
+.debug-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 24px;
+}
+
+.debug-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: min(640px, 100%);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.debug-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.debug-panel-header h2 {
+  margin: 0;
+  flex: 1;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-size: 20px;
+}
+
+.debug-close {
+  background: var(--border);
+  color: var(--text);
+  border: none;
+  border-radius: 4px;
+  padding: 10px 18px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.debug-log {
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.debug-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.debug-row:last-child {
+  border-bottom: none;
+}
+
+.debug-check-icon {
+  font-weight: 700;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.debug-row.ok .debug-check-icon {
+  color: #3ddc74;
+}
+
+.debug-row.fail .debug-check-icon {
+  color: #ff4d4d;
+}
+
+.debug-check-name {
+  width: 140px;
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.debug-check-detail {
+  color: var(--text);
+  word-break: break-word;
+}
+
+.wide-card {
+  grid-column: span 2;
+}
+
+.usage-card {
+  grid-column: span 3;
+}
+
+.usage-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(6px, 1vw, 14px);
+  min-height: 0;
+}
+
+.usage-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 6px;
+}
+
+.usage-bar-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.usage-bar {
+  width: 100%;
+  min-height: 3px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+  transition: height 0.4s ease;
+}
+
+.usage-bar-label {
+  color: var(--text-dim);
+  font-size: clamp(9px, 0.9vw, 11px);
+  text-transform: uppercase;
+}
+
+.dashboard-footer {
+  flex-shrink: 0;
+  margin-top: clamp(8px, 1.4vh, 16px);
+  color: var(--text-dim);
+  font-size: clamp(9px, 0.9vw, 12px);
+  text-align: center;
+}
+
+@media (max-width: 900px), (orientation: portrait) {
+  html,
+  body {
+    overflow: auto;
+  }
+  .dashboard {
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: none;
+    grid-auto-rows: minmax(140px, auto);
+  }
+  .wide-card,
+  .usage-card {
+    grid-column: span 2;
+  }
+}

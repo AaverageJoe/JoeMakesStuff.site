@@ -38,6 +38,9 @@ export const api = {
   deleteGalleryImage: (slug, id) =>
     request(`/projects/${slug}/gallery/${id}`, { method: 'DELETE' }),
 
+  getCopy: () => request('/copy'),
+  updateCopy: (fields) => request('/copy', { method: 'PUT', body: JSON.stringify(fields) }),
+
   getSettings: () => request('/settings'),
   updateSettings: (fields) => request('/settings', { method: 'PUT', body: JSON.stringify(fields) }),
   uploadSettingsAsset: (target, file) => uploadFile(`/settings/upload?target=${encodeURIComponent(target)}`, file),
@@ -51,6 +54,13 @@ export const api = {
   getAdminServices: () => request('/admin/services'),
   updateService: (id, fields) => request(`/services/${id}`, { method: 'PUT', body: JSON.stringify(fields) }),
   uploadServiceImage: (id, file) => uploadFile(`/services/${id}/upload`, file),
+
+  trackPageview: (path) =>
+    request('/track/pageview', { method: 'POST', body: JSON.stringify({ path }) }).catch(() => {}),
+  trackEvent: (type, path) =>
+    request('/track/event', { method: 'POST', body: JSON.stringify({ type, path }) }).catch(() => {}),
+
+  getDashboardStats: () => request('/stats/dashboard'),
 
   login: (username, password) =>
     request('/login', { method: 'POST', body: JSON.stringify({ username, password }) }),

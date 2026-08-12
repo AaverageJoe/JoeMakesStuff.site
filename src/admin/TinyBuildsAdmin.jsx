@@ -14,13 +14,15 @@ export default function TinyBuildsAdmin() {
   if (!items) return <div className="admin-muted">Loading…</div>
 
   const handleFile = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
     setError('')
     setUploading(true)
     try {
-      const item = await api.addTinyBuild(file)
-      setItems((prev) => [...prev, item])
+      for (const file of files) {
+        const item = await api.addTinyBuild(file)
+        setItems((prev) => [...prev, item])
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -44,7 +46,8 @@ export default function TinyBuildsAdmin() {
       <h1 className="admin-page-title">Tiny Builds</h1>
       <p className="admin-muted">
         {items.length} photos. Static images (jpg/png) are automatically cropped to a square.
-        Animated GIFs are kept as uploaded and displayed square via cropping in the layout.
+        Videos and GIFs are converted to a small, looping GIF automatically. Select multiple files
+        at once to add them all.
       </p>
       {error && <div className="admin-error" style={{ margin: '12px 0' }}>{error}</div>}
 
@@ -71,7 +74,14 @@ export default function TinyBuildsAdmin() {
         >
           {uploading ? '…' : '+ Add'}
         </button>
-        <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFile} />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          hidden
+          onChange={handleFile}
+        />
       </div>
     </div>
   )

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { Link } from '../router'
+import { useCopy } from '../copy'
 
 export default function FeaturedWork() {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
+  const { copy } = useCopy()
 
   useEffect(() => {
     api
@@ -17,12 +19,9 @@ export default function FeaturedWork() {
     <section id="work">
       <div className="container">
         <div className="section-head">
-          <div className="eyebrow">Selected Work</div>
-          <h2>Featured Work</h2>
-          <p>
-            A selection of client projects spanning brand activations, interactive exhibits and
-            hardware-driven experiences.
-          </p>
+          <div className="eyebrow">{copy.featured_work_eyebrow}</div>
+          <h2>{copy.featured_work_heading}</h2>
+          <p>{copy.featured_work_intro}</p>
         </div>
 
         {!loading && (

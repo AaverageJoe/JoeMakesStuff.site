@@ -19,6 +19,10 @@ dist-ssr
 server/data/
 server/uploads/
 
+# One-off local backup made before the Aug 2026 image-optimization pass —
+# not real site content, just a safety copy; too large for git regardless.
+server/uploads_backup_preoptimization/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

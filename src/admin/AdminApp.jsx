@@ -6,6 +6,7 @@ import ProjectEditor from './ProjectEditor'
 import TinyBuildsAdmin from './TinyBuildsAdmin'
 import ServicesAdmin from './ServicesAdmin'
 import SiteSettings from './SiteSettings'
+import SiteCopyAdmin from './SiteCopyAdmin'
 import ChangePassword from './ChangePassword'
 import './admin.css'
 
@@ -13,6 +14,7 @@ const TABS = [
   { key: 'projects', label: 'Projects' },
   { key: 'tiny-builds', label: 'Tiny Builds' },
   { key: 'services', label: 'Services' },
+  { key: 'copy', label: 'Site Copy' },
   { key: 'settings', label: 'Site Settings' },
 ]
 
@@ -95,6 +97,7 @@ export default function AdminApp() {
 
       <main className="admin-main">
         {view === 'settings' && <SiteSettings />}
+        {view === 'copy' && <SiteCopyAdmin />}
         {view === 'tiny-builds' && <TinyBuildsAdmin />}
         {view === 'services' && <ServicesAdmin />}
         {view === 'projects' &&

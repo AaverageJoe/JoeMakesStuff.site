@@ -23,11 +23,6 @@ export const EXPERIENCE = [
   { org: 'Joe.MakesStuff', role: 'Founder', year: '2024–Present' },
 ]
 
-export const ABOUT_TITLE = 'Principal Creative Technologist'
-
-export const ABOUT_INTRO =
-  'For the past 8 years, I’ve been working across a range of industries as lead in the application of creative technologies for business. I have developed for clients and projects around the globe and consider myself a generalist across a range of technical skill sets, from game development, programming, CAD and electronics. A lot of my work includes rapid prototyping and R&D before project planning and leading the technical delivery for the project.'
-
 export const SKILLS = [
   {
     category: 'Technical',
@@ -42,9 +37,6 @@ export const SKILLS = [
     items: ['Business Planning', 'R&D Management', 'Product Development', 'Leadership'],
   },
 ]
-
-export const TINY_BUILDS_INTRO =
-  'Here’s some Tiny Builds — smaller things I’ve made over the years with and without clients. From demo smart homes to a Lego camera. More details for Tiny Builds coming soon.'
 
 export const CLIENT_LOGOS = [
   '/images/clients/adidas.png',

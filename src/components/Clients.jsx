@@ -1,4 +1,5 @@
 import { CLIENT_LOGOS } from '../data/content'
+import { useCopy } from '../copy'
 
 // Acronyms/brand names that shouldn't be naively title-cased word-by-word.
 const NAME_OVERRIDES = {
@@ -30,10 +31,12 @@ function labelFor(src) {
 }
 
 export default function Clients() {
+  const { copy } = useCopy()
+
   return (
     <section id="clients" style={{ paddingTop: 0 }}>
       <div className="container">
-        <div className="eyebrow">Worked With</div>
+        <div className="eyebrow">{copy.clients_eyebrow}</div>
         <div className="clients-strip">
           {CLIENT_LOGOS.map((src) => (
             <img key={src} src={src} alt={labelFor(src)} loading="lazy" />

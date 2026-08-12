@@ -7,10 +7,31 @@
   --text-dim: #a3a5ac;
   --accent: #ff5a36;
   --accent-dim: #7a2c1c;
+  --header-bg: rgba(11, 12, 14, 0.75);
+  --hero-scrim: rgba(11, 12, 14, 0.55);
+  --placeholder-end: #1e2024;
+  --client-logo-filter: grayscale(1) brightness(1.6);
+  --client-logo-opacity: 1;
   --max-width: 1180px;
   --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #f7f6f2;
+  --bg-alt: #edece5;
+  --card: #ffffff;
+  --border: #dddad0;
+  --text: #17181c;
+  --text-dim: #5c5d63;
+  --accent-dim: #ffd9cc;
+  --header-bg: rgba(247, 246, 242, 0.8);
+  --hero-scrim: rgba(247, 246, 242, 0.55);
+  --placeholder-end: #e2e0d6;
+  --client-logo-filter: grayscale(1);
+  --client-logo-opacity: 0.6;
+  color-scheme: light;
 }
 
 * {
@@ -37,6 +58,18 @@ img {
 
 a {
   color: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 h1, h2, h3, h4 {
@@ -95,7 +128,7 @@ section {
   top: 0;
   z-index: 50;
   backdrop-filter: blur(10px);
-  background: rgba(11, 12, 14, 0.75);
+  background: var(--header-bg);
   border-bottom: 1px solid var(--border);
 }
 
@@ -117,9 +150,27 @@ section {
   letter-spacing: -0.01em;
 }
 
-.brand img {
+/* Rendered as a solid-colour shape masked by the logo's alpha channel,
+   rather than an <img>, so hover can just swap background-color to the
+   accent orange instead of fighting a raster image's baked-in colour. */
+.brand-mark {
+  display: block;
   height: 30px;
-  width: auto;
+  width: 222px; /* matches the source logo's 1302:176 aspect ratio at 30px tall */
+  background-color: var(--text);
+  -webkit-mask-image: url('/images/logo.png');
+  mask-image: url('/images/logo.png');
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: left center;
+  mask-position: left center;
+  transition: background-color 0.2s ease;
+}
+
+.brand:hover .brand-mark {
+  background-color: var(--accent);
 }
 
 .site-nav {
@@ -136,6 +187,31 @@ section {
 
 .site-nav a:hover {
   color: var(--text);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .nav-toggle {
@@ -176,7 +252,7 @@ section {
 .hero-bg-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(11, 12, 14, 0.55) 0%, var(--bg) 100%);
+  background: linear-gradient(180deg, var(--hero-scrim) 0%, var(--bg) 100%);
   z-index: 1;
 }
 
@@ -189,6 +265,82 @@ section {
 .hero h1 {
   font-size: clamp(38px, 6vw, 64px);
   letter-spacing: -0.02em;
+}
+
+.hero-signature {
+  display: flex;
+  align-items: center;
+  gap: 0.12em;
+  text-decoration: none;
+  color: inherit;
+}
+
+.hero-signature:hover .signature-path {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.hero-signature:hover .signature-rest {
+  color: var(--accent);
+}
+
+.signature-svg {
+  height: 1.2em;
+  width: auto;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* Self-drawing "Joe." mark, traced from the real logo. `pathLength="1"` on
+   the <path> normalizes its length to 1, so the stroke just animates from
+   dashoffset 1 -> 0 regardless of the path's actual geometry. Once drawn,
+   the outline fades into the solid ink fill — a thin pencil sketch settling
+   into the finished brand mark. */
+.signature-path {
+  fill: var(--text);
+  fill-opacity: 0;
+  stroke: var(--text);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: signatureDraw 1.7s cubic-bezier(0.65, 0, 0.35, 1) forwards,
+    signatureFill 0.5s ease forwards 1.6s;
+  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+.signature-rest {
+  display: inline-block;
+  transition: color 0.2s ease;
+}
+
+@keyframes signatureDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes signatureFill {
+  to {
+    fill-opacity: 1;
+    stroke-opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signature-path {
+    animation: none;
+    fill-opacity: 1;
+    stroke-opacity: 0;
+    stroke-dashoffset: 0;
+  }
+
+  .service-row.reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 .hero .lede {
@@ -276,7 +428,7 @@ section {
 }
 
 .placeholder-fill {
-  background: linear-gradient(135deg, var(--bg-alt), #1e2024);
+  background: linear-gradient(135deg, var(--bg-alt), var(--placeholder-end));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -650,24 +802,205 @@ section {
   font-style: italic;
 }
 
-/* ---------- Tiny Builds ---------- */
-.tiny-grid {
+/* ---------- Tiny Builds section ---------- */
+/* A faint blueprint-grid texture behind the whole section — a nod to CAD/
+   engineering drawings, giving the "workshop" a bit more visual energy than
+   a flat background. */
+#tiny-builds {
+  background-image: linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center top;
+  -webkit-mask-image: linear-gradient(180deg, transparent, black 10%, black 90%, transparent);
+  mask-image: linear-gradient(180deg, transparent, black 10%, black 90%, transparent);
+}
+
+.view-modes {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
+  margin: 20px 0 0;
+}
+
+.view-mode-btn {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent-dim);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.view-mode-btn:hover {
+  border-color: var(--accent);
+}
+
+.view-mode-btn.active {
+  background: var(--accent);
+  color: #0b0c0e;
+  border-color: var(--accent);
+}
+
+.cube-hint {
+  text-align: center;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-dim);
+  margin: 16px 0 0;
+}
+
+/* ---------- Tiny Builds cube ---------- */
+/* A real CSS 3D cube (not a canvas/WebGL scene) — six faces built from
+   rotateX/Y + translateZ inside a `transform-style: preserve-3d` parent,
+   each face holding its own 6x6 image mosaic. Drag/click physics adjust
+   rotationX/Y in a ref and write the transform directly to the DOM (see
+   TinyBuildsCube.jsx) so spinning stays smooth without routing every
+   pointermove through React state — the cube only ever moves from a click
+   (spin) or a released drag (flick), never on its own. */
+.cube-stage {
+  --cube-size: 460px;
+  height: calc(var(--cube-size) * 1.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1400px;
+}
+
+.cube {
+  position: relative;
+  width: var(--cube-size);
+  height: var(--cube-size);
+  transform-style: preserve-3d;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+}
+
+.cube:active {
+  cursor: grabbing;
+}
+
+.cube-face {
+  position: absolute;
+  inset: 0;
+  width: var(--cube-size);
+  height: var(--cube-size);
+  backface-visibility: hidden;
+}
+
+.cube-face-front {
+  transform: translateZ(calc(var(--cube-size) / 2));
+}
+
+.cube-face-back {
+  transform: rotateY(180deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.cube-face-right {
+  transform: rotateY(90deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.cube-face-left {
+  transform: rotateY(-90deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.cube-face-top {
+  transform: rotateX(90deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.cube-face-bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--cube-size) / 2));
+}
+
+.cube-face-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  width: 100%;
+  height: 100%;
+  gap: 1px;
+  background: var(--border);
+}
+
+.cube-cell {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-alt);
+  z-index: 1;
+}
+
+.cube-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.38s ease, transform 0.25s ease;
+}
+
+.cube-cell.is-fading img {
+  opacity: 0;
+}
+
+/* Hovering a single tile zooms it in for a clearer look — releases its own
+   clipping so the enlarged image can spill over its neighbours, and forces
+   full opacity so it reads clearly even if it was mid-fade in the ambient
+   cycle above. */
+.cube-cell:hover {
+  overflow: visible;
+  z-index: 10;
+}
+
+.cube-cell:hover img {
+  transform: scale(1.7);
+  opacity: 1 !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+}
+
+@media (max-width: 700px) {
+  .cube-stage {
+    --cube-size: 260px;
+  }
+}
+
+/* ---------- Tiny Builds: grid mode ---------- */
+/* Growth is a plain transform: scale() on the tile itself — it stays in its
+   own grid cell and visually overlaps its neighbours rather than changing
+   grid-column/row span, so nothing reflows into a different row. */
+.tiny-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-auto-rows: 120px;
+  gap: 3px;
 }
 
 .tiny-item {
-  flex: 1 1 200px;
-  height: 220px;
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
   border: 1px solid var(--border);
-  transition: flex-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+  transform: scale(1);
+  transform-origin: center;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1), box-shadow 0.2s ease;
 }
 
-.tiny-item:hover {
-  flex-grow: 3;
+.tiny-item.is-focused {
+  z-index: 5;
+  transform: scale(1.3334); /* grows by a third, in place */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+
+.tiny-item.is-neighbor {
+  z-index: 3;
+  transform: scale(1.12);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tiny-item img {
@@ -675,22 +1008,207 @@ section {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.tiny-item:hover img {
-  transform: scale(1.08);
 }
 
 @media (max-width: 700px) {
-  .tiny-item {
-    flex-basis: 140px;
-    height: 150px;
+  .tiny-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-auto-rows: 90px;
+  }
+}
+
+/* ---------- Tiny Builds: physics mode ---------- */
+/* matter-js runs headless (no canvas) — bodies are the source of truth for
+   position/rotation, and TinyBuildsPhysics.jsx writes each one's transform
+   onto a plain DOM element every frame, so the images are real <img> tags
+   (GIFs keep animating) rather than something drawn to a canvas. */
+.physics-stage {
+  position: relative;
+  height: 660px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+  cursor: crosshair;
+}
+
+.physics-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 56px;
+  height: 56px;
+  will-change: transform;
+}
+
+.physics-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border: 1px solid var(--border);
+  pointer-events: none; /* clicks pass through to the stage so the whole area is explode-able */
+}
+
+@media (max-width: 700px) {
+  .physics-stage {
+    height: 480px;
   }
 
-  .tiny-item:hover {
-    flex-grow: 1;
+  .physics-tile {
+    width: 40px;
+    height: 40px;
   }
+}
+
+/* ---------- Tiny Builds: retro mode ---------- */
+/* A deliberate, scoped exception to the site's no-rounded-corners rule — a
+   CRT reads as a CRT specifically because of its curved screen and bezel;
+   sharp corners here would defeat the point of a "retro" mode. */
+.crt-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 44px;
+}
+
+.crt-set {
+  position: relative;
+  width: min(100%, 520px);
+  background: linear-gradient(160deg, #464036, #17140f);
+  border-radius: 26px;
+  padding: 26px 26px 20px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(255, 255, 255, 0.06);
+}
+
+.crt-screen {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  cursor: pointer;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.85), inset 0 0 100px rgba(0, 0, 0, 0.6);
+}
+
+.crt-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.25) contrast(1.05);
+  animation: crtImageIn 0.4s ease;
+}
+
+@keyframes crtImageIn {
+  from {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.crt-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.28) 0px,
+    rgba(0, 0, 0, 0.28) 1px,
+    transparent 2px,
+    transparent 3px
+  );
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.crt-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6) 100%);
+  pointer-events: none;
+}
+
+.crt-flicker {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  animation: crtFlickerLoop 6s infinite;
+}
+
+@keyframes crtFlickerLoop {
+  0%,
+  96%,
+  100% {
+    opacity: 0;
+  }
+  97% {
+    opacity: 0.03;
+  }
+  98% {
+    opacity: 0;
+  }
+  99% {
+    opacity: 0.05;
+  }
+}
+
+.crt-screen.is-glitching {
+  animation: crtGlitch 0.26s steps(2);
+}
+
+@keyframes crtGlitch {
+  0% {
+    filter: hue-rotate(0deg) brightness(1);
+    transform: translateX(0);
+  }
+  20% {
+    filter: hue-rotate(30deg) brightness(1.4);
+    transform: translateX(-4px);
+  }
+  40% {
+    filter: hue-rotate(-20deg) brightness(0.6);
+    transform: translateX(5px);
+  }
+  60% {
+    filter: hue-rotate(10deg) brightness(1.6);
+    transform: translateX(-3px);
+  }
+  80% {
+    filter: hue-rotate(-10deg) brightness(0.8);
+    transform: translateX(2px);
+  }
+  100% {
+    filter: hue-rotate(0deg) brightness(1);
+    transform: translateX(0);
+  }
+}
+
+.crt-speaker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  padding: 16px 40px 4px;
+}
+
+.crt-speaker span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.crt-stand {
+  width: 100px;
+  height: 20px;
+  margin-top: -2px;
+  background: linear-gradient(160deg, #3a352e, #17140f);
+  border-radius: 4px 4px 12px 12px;
 }
 
 /* ---------- Services ---------- */
@@ -714,6 +1232,17 @@ section {
 
 .service-row.reverse > * {
   direction: ltr;
+}
+
+.service-row.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.service-row.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .service-media img {
@@ -855,7 +1384,6 @@ section {
   flex-wrap: wrap;
   align-items: center;
   gap: 40px;
-  opacity: 0.75;
 }
 
 .clients-strip img {
@@ -863,7 +1391,8 @@ section {
   width: auto;
   max-width: 120px;
   object-fit: contain;
-  filter: grayscale(1) brightness(1.6);
+  filter: var(--client-logo-filter);
+  opacity: var(--client-logo-opacity);
 }
 
 /* ---------- Contact / Footer ---------- */

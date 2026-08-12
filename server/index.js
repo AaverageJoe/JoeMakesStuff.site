@@ -8,15 +8,163 @@ import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 import { fileURLToPath } from 'url'
+import ffmpeg from 'fluent-ffmpeg'
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { db } from './db.js'
 import { verifyLogin, requireAuth, getAdmin, setPassword } from './auth.js'
 import { FONT_KEYS } from '../src/fonts.js'
 import { buildMeta, injectSeo, generateSitemap } from './seo.js'
 
+ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const UPLOADS_DIR = path.join(__dirname, 'uploads')
 const DIST_DIR = path.join(__dirname, '..', 'dist')
 fs.mkdirSync(UPLOADS_DIR, { recursive: true })
+
+// Windows can briefly hold a file handle open after sharp/ffmpeg finish
+// reading it, so an immediate unlink sometimes fails with EBUSY/EPERM.
+// Retry a few times with a short backoff instead of leaking temp files.
+async function safeUnlink(filePath, attempts = 5, delayMs = 150) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await fs.promises.unlink(filePath)
+      return
+    } catch (err) {
+      if (err.code === 'ENOENT') return
+      if (i === attempts - 1) {
+        console.warn(`[tiny-builds] Could not remove temp file ${filePath}: ${err.message}`)
+        return
+      }
+      await new Promise((r) => setTimeout(r, delayMs))
+    }
+  }
+}
+
+// Converts a video (or an oversized animated GIF) into a small, looping GIF —
+// scaled down and palette-optimized so a busy grid of these doesn't ship
+// megabytes of animation per thumbnail. Videos are trimmed to a short loop
+// since these are hover-preview clips, not full playback.
+function convertToGif(inputPath, outputPath, { maxSeconds = 4, width = 280, fps = 8, maxColors = 96 } = {}) {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .duration(maxSeconds)
+      .complexFilter([
+        `[0:v] fps=${fps},scale=${width}:-1:flags=lanczos,split [a][b]`,
+        `[a] palettegen=max_colors=${maxColors}:stats_mode=diff [p]`,
+        `[b][p] paletteuse=dither=bayer:bayer_scale=3`,
+      ])
+      .outputOptions(['-loop', '0'])
+      .on('end', resolve)
+      .on('error', reject)
+      .save(outputPath)
+  })
+}
+
+// Applied to freshly uploaded project images/posters/gallery images (never
+// to the dedicated video slots or gallery video clips) — without this, an
+// unresized phone photo or a raw animated GIF is stored exactly as
+// uploaded, which is how a handful of showcase images ended up 5-24MB and
+// dominating the homepage's payload. Overwrites the file in place, same
+// path/extension, so callers don't need to change the URL they already
+// computed from multer's filename.
+async function optimizeImageFile(filePath, mimetype) {
+  if (mimetype === 'image/gif') {
+    const tmpOut = `${filePath}.tmp.gif`
+    await convertToGif(filePath, tmpOut, { maxSeconds: 6, width: 480, fps: 10, maxColors: 128 })
+    await safeUnlink(filePath)
+    await fs.promises.rename(tmpOut, filePath)
+  } else if (/^image\/(jpeg|png|webp)$/.test(mimetype)) {
+    const buffer = await sharp(filePath)
+      .rotate()
+      .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+      .toBuffer()
+    await fs.promises.writeFile(filePath, buffer)
+  }
+}
+
+// Recursively sums file sizes under a directory, for the storage stat on
+// the rack dashboard. Walking the whole uploads tree is too slow to do on
+// every dashboard poll, so the result is cached for a few minutes.
+function getDirSize(dir) {
+  let total = 0
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    total += entry.isDirectory() ? getDirSize(full) : fs.statSync(full).size
+  }
+  return total
+}
+
+let storageCache = { at: 0, bytes: 0 }
+function getStorageBytes() {
+  const now = Date.now()
+  if (now - storageCache.at > 5 * 60 * 1000) {
+    const uploadsBytes = fs.existsSync(UPLOADS_DIR) ? getDirSize(UPLOADS_DIR) : 0
+    const dbPath = path.join(__dirname, 'data', 'db.sqlite')
+    const dbBytes = fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0
+    storageCache = { at: now, bytes: uploadsBytes + dbBytes }
+  }
+  return storageCache.bytes
+}
+
+// Runs a handful of real checks against the running server, for the
+// ONLINE/OFFLINE status tile on the rack dashboard — tapping it shows this
+// list so a fault (full disk, missing ffmpeg, DB lock) is diagnosable from
+// the touchscreen alone, without SSH-ing into the Pi.
+function runHealthChecks() {
+  const checks = []
+
+  try {
+    db.prepare(`SELECT 1`).get()
+    checks.push({ name: 'Database', ok: true, detail: 'Connected, query succeeded' })
+  } catch (err) {
+    checks.push({ name: 'Database', ok: false, detail: err.message })
+  }
+
+  try {
+    fs.accessSync(UPLOADS_DIR, fs.constants.R_OK | fs.constants.W_OK)
+    checks.push({ name: 'Uploads folder', ok: true, detail: UPLOADS_DIR })
+  } catch (err) {
+    checks.push({ name: 'Uploads folder', ok: false, detail: err.message })
+  }
+
+  try {
+    const ok = fs.existsSync(ffmpegInstaller.path)
+    checks.push({
+      name: 'ffmpeg binary',
+      ok,
+      detail: ok ? ffmpegInstaller.path : `Not found at ${ffmpegInstaller.path}`,
+    })
+  } catch (err) {
+    checks.push({ name: 'ffmpeg binary', ok: false, detail: err.message })
+  }
+
+  try {
+    const admin = getAdmin()
+    checks.push({
+      name: 'Admin account',
+      ok: !!admin,
+      detail: admin ? `Configured (${admin.username})` : 'No admin account found',
+    })
+  } catch (err) {
+    checks.push({ name: 'Admin account', ok: false, detail: err.message })
+  }
+
+  try {
+    if (typeof fs.statfsSync === 'function') {
+      const stat = fs.statfsSync(__dirname)
+      const freeMB = (stat.bfree * stat.bsize) / 1024 / 1024
+      checks.push({ name: 'Disk space', ok: freeMB > 500, detail: `${freeMB.toFixed(0)} MB free` })
+    } else {
+      checks.push({ name: 'Disk space', ok: true, detail: 'Not checkable on this platform' })
+    }
+  } catch (err) {
+    // Can't determine free space — that's not itself a fault, so don't fail the check over it.
+    checks.push({ name: 'Disk space', ok: true, detail: `Could not check: ${err.message}` })
+  }
+
+  return { online: checks.every((c) => c.ok), checks }
+}
 
 // One-time bootstrap: create a default admin if none exists yet, so the
 // server never starts in a state nobody can log into.
@@ -44,8 +192,15 @@ if (!sessionSecret) {
   }
 }
 
+// One-way hash of the visitor's IP, salted with the server's own session
+// secret — lets us count unique visitors without ever storing a raw IP.
+function hashVisitor(req) {
+  return crypto.createHash('sha256').update(`${req.ip}:${sessionSecret}`).digest('hex').slice(0, 16)
+}
+
 const app = express()
 const PORT = process.env.PORT || 4000
+const SERVER_STARTED_AT = Date.now()
 
 app.use(express.json({ limit: '2mb' }))
 app.use(cookieParser())
@@ -114,6 +269,11 @@ const IMAGE_FIELDS = [
   'dev1_image', 'dev2_image', 'dev3_image', 'dev_video', 'dev_video_poster',
   'showcase_image', 'banner_video', 'banner_poster',
 ]
+
+// The only two IMAGE_FIELDS that are actually meant to hold a real playable
+// video, not a static image/poster — everything else in that list gets
+// optimizeImageFile() treatment.
+const VIDEO_TARGETS = new Set(['dev_video', 'banner_video'])
 
 // Public: only projects marked visible, in their live display order.
 app.get('/api/projects', (req, res) => {
@@ -221,13 +381,21 @@ const upload = multer({
   },
 })
 
-app.post('/api/projects/:slug/upload', requireAuth, upload.single('file'), (req, res) => {
+app.post('/api/projects/:slug/upload', requireAuth, upload.single('file'), async (req, res) => {
   const { slug } = req.params
   const target = req.body.target || req.query.target
   if (!IMAGE_FIELDS.includes(target)) return res.status(400).json({ error: 'Invalid target field' })
   const existing = db.prepare(`SELECT slug FROM projects WHERE slug = ?`).get(slug)
   if (!existing) return res.status(404).json({ error: 'Not found' })
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
+
+  if (!VIDEO_TARGETS.has(target)) {
+    try {
+      await optimizeImageFile(req.file.path, req.file.mimetype)
+    } catch (err) {
+      console.warn(`[projects] Could not optimize ${req.file.path}: ${err.message}`)
+    }
+  }
 
   const url = `/uploads/projects/${slug}/${req.file.filename}`
   db.prepare(`UPDATE projects SET ${target} = ?, updated_at = datetime('now') WHERE slug = ?`).run(url, slug)
@@ -251,13 +419,21 @@ const galleryUpload = multer({
   limits: { fileSize: 40 * 1024 * 1024 }, // 40MB, gallery can hold short video clips
 })
 
-app.post('/api/projects/:slug/gallery', requireAuth, galleryUpload.single('file'), (req, res) => {
+app.post('/api/projects/:slug/gallery', requireAuth, galleryUpload.single('file'), async (req, res) => {
   const { slug } = req.params
   const existing = db.prepare(`SELECT slug FROM projects WHERE slug = ?`).get(slug)
   if (!existing) return res.status(404).json({ error: 'Not found' })
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
 
   const kind = req.file.mimetype.startsWith('video') ? 'video' : 'image'
+  if (kind === 'image') {
+    try {
+      await optimizeImageFile(req.file.path, req.file.mimetype)
+    } catch (err) {
+      console.warn(`[gallery] Could not optimize ${req.file.path}: ${err.message}`)
+    }
+  }
+
   const url = `/uploads/projects/${slug}/gallery/${req.file.filename}`
   const maxPos = db.prepare(`SELECT MAX(position) AS m FROM gallery WHERE slug = ?`).get(slug)
   const position = (maxPos.m ?? -1) + 1
@@ -280,9 +456,20 @@ app.delete('/api/projects/:slug/gallery/:id', requireAuth, (req, res) => {
 
 // ---------- Tiny Builds ----------
 const TINY_BUILDS_DIR = path.join(UPLOADS_DIR, 'tiny-builds')
+const TINY_BUILDS_TMP_DIR = path.join(UPLOADS_DIR, 'tmp')
 const tinyBuildsUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB — covers a large GIF
+  // Disk storage, not memory — raw phone videos before GIF conversion can
+  // run to tens of megabytes, too large to hold as in-memory buffers.
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      fs.mkdirSync(TINY_BUILDS_TMP_DIR, { recursive: true })
+      cb(null, TINY_BUILDS_TMP_DIR)
+    },
+    filename: (req, file, cb) => {
+      cb(null, `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${path.extname(file.originalname)}`)
+    },
+  }),
+  limits: { fileSize: 300 * 1024 * 1024 }, // raw source video; discarded once converted to a small GIF
 })
 
 app.get('/api/tiny-builds', (req, res) => {
@@ -293,35 +480,41 @@ app.post('/api/tiny-builds', requireAuth, tinyBuildsUpload.single('file'), async
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
   fs.mkdirSync(TINY_BUILDS_DIR, { recursive: true })
 
+  const isVideo = req.file.mimetype.startsWith('video/')
   const isGif = req.file.mimetype === 'image/gif'
   const id = crypto.randomBytes(6).toString('hex')
+  const tempPath = req.file.path
 
   try {
     let filename
-    if (isGif) {
-      // Animated GIFs are stored as-is — cropping risks breaking the
-      // animation, and the grid already displays them square via CSS.
+    if (isVideo || isGif) {
+      // Videos and oversized animated GIFs are both re-encoded into a small,
+      // palette-optimized looping GIF — the grid already displays them
+      // square via CSS, so no separate cropping step is needed here.
       filename = `${id}.gif`
-      fs.writeFileSync(path.join(TINY_BUILDS_DIR, filename), req.file.buffer)
+      await convertToGif(tempPath, path.join(TINY_BUILDS_DIR, filename))
     } else {
       filename = `${id}.jpg`
-      await sharp(req.file.buffer)
+      await sharp(tempPath)
         .rotate() // respect EXIF orientation
         .resize(900, 900, { fit: 'cover', position: 'attention' })
         .jpeg({ quality: 88 })
         .toFile(path.join(TINY_BUILDS_DIR, filename))
     }
 
+    const kind = isVideo || isGif ? 'gif' : 'image'
     const url = `/uploads/tiny-builds/${filename}`
     const maxPos = db.prepare(`SELECT MAX(position) AS m FROM tiny_builds`).get()
     const position = (maxPos.m ?? -1) + 1
     const info = db
       .prepare(`INSERT INTO tiny_builds (url, kind, position) VALUES (?, ?, ?)`)
-      .run(url, isGif ? 'gif' : 'image', position)
+      .run(url, kind, position)
 
-    res.status(201).json({ id: info.lastInsertRowid, url, kind: isGif ? 'gif' : 'image', position })
+    res.status(201).json({ id: info.lastInsertRowid, url, kind, position })
   } catch (err) {
-    res.status(500).json({ error: `Could not process image: ${err.message}` })
+    res.status(500).json({ error: `Could not process file: ${err.message}` })
+  } finally {
+    safeUnlink(tempPath)
   }
 })
 
@@ -332,6 +525,40 @@ app.delete('/api/tiny-builds/:id', requireAuth, (req, res) => {
   const filePath = path.join(UPLOADS_DIR, row.url.replace(/^\/uploads\//, ''))
   fs.unlink(filePath, () => {})
   res.json({ ok: true })
+})
+
+// ---------- Site copy ----------
+// A schemaless key/value store — only fields an admin has actually edited
+// exist as rows here. The frontend merges these over its own hardcoded
+// defaults (src/copy.js), so the site reads correctly even with an empty
+// table and new editable fields never need a migration.
+function getSiteCopy() {
+  const rows = db.prepare(`SELECT key, value FROM site_copy`).all()
+  const copy = {}
+  rows.forEach((row) => {
+    copy[row.key] = row.value
+  })
+  return copy
+}
+
+app.get('/api/copy', (req, res) => {
+  res.json(getSiteCopy())
+})
+
+app.put('/api/copy', requireAuth, (req, res) => {
+  const fields = req.body || {}
+  const upsert = db.prepare(
+    `INSERT INTO site_copy (key, value) VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+  )
+  const applyAll = db.transaction((entries) => {
+    for (const [key, value] of entries) {
+      upsert.run(key, String(value ?? ''))
+    }
+  })
+  applyAll(Object.entries(fields))
+
+  res.json(getSiteCopy())
 })
 
 // ---------- Services ----------
@@ -461,6 +688,79 @@ app.delete('/api/settings/:field', requireAuth, (req, res) => {
   if (!SETTINGS_ASSET_FIELDS.includes(field)) return res.status(400).json({ error: 'Invalid field' })
   db.prepare(`UPDATE settings SET ${field} = NULL, updated_at = datetime('now') WHERE id = 1`).run()
   res.json(db.prepare(`SELECT * FROM settings WHERE id = 1`).get())
+})
+
+// ---------- Analytics: tracking + rack dashboard ----------
+const EVENT_TYPES = new Set(['contact_click'])
+
+app.post('/api/track/pageview', (req, res) => {
+  const p = (req.body?.path || '').slice(0, 200)
+  if (!p || p.startsWith('/admin') || p.startsWith('/dashboard')) return res.status(204).end()
+  db.prepare(`INSERT INTO page_views (path, visitor_hash) VALUES (?, ?)`).run(p, hashVisitor(req))
+  res.status(204).end()
+})
+
+app.post('/api/track/event', (req, res) => {
+  const type = req.body?.type
+  if (!EVENT_TYPES.has(type)) return res.status(400).json({ error: 'Unknown event type' })
+  const p = (req.body?.path || '').slice(0, 200)
+  db.prepare(`INSERT INTO events (type, path, visitor_hash) VALUES (?, ?, ?)`).run(type, p, hashVisitor(req))
+  res.status(204).end()
+})
+
+app.get('/api/stats/dashboard', (req, res) => {
+  const totalPageViews = db.prepare(`SELECT COUNT(*) AS n FROM page_views`).get().n
+  const uniqueVisitors = db.prepare(`SELECT COUNT(DISTINCT visitor_hash) AS n FROM page_views`).get().n
+  const todayViews = db
+    .prepare(`SELECT COUNT(*) AS n FROM page_views WHERE date(created_at) = date('now')`)
+    .get().n
+  const last7Days = db
+    .prepare(
+      `SELECT date(created_at) AS date, COUNT(*) AS views
+       FROM page_views
+       WHERE created_at >= datetime('now', '-6 days', 'start of day')
+       GROUP BY date(created_at)
+       ORDER BY date ASC`
+    )
+    .all()
+  const contactRequests = db
+    .prepare(`SELECT COUNT(*) AS n FROM events WHERE type = 'contact_click'`)
+    .get().n
+
+  const topProjectView = db
+    .prepare(
+      `SELECT path, COUNT(*) AS views
+       FROM page_views
+       WHERE path LIKE '/work/%'
+       GROUP BY path
+       ORDER BY views DESC
+       LIMIT 1`
+    )
+    .get()
+  let mostViewedProject = null
+  if (topProjectView) {
+    const slug = decodeURIComponent(topProjectView.path.replace(/^\/work\//, '').replace(/\/$/, ''))
+    const project = db.prepare(`SELECT title FROM projects WHERE slug = ?`).get(slug)
+    mostViewedProject = { slug, title: project?.title || slug, views: topProjectView.views }
+  }
+
+  const projectCount = db.prepare(`SELECT COUNT(*) AS n FROM projects WHERE visible = 1`).get().n
+  const tinyBuildsCount = db.prepare(`SELECT COUNT(*) AS n FROM tiny_builds`).get().n
+
+  res.json({
+    uptimeSeconds: Math.floor((Date.now() - SERVER_STARTED_AT) / 1000),
+    serverStartedAt: new Date(SERVER_STARTED_AT).toISOString(),
+    totalPageViews,
+    uniqueVisitors,
+    todayViews,
+    last7Days,
+    contactRequests,
+    storageBytes: getStorageBytes(),
+    mostViewedProject,
+    projectCount,
+    tinyBuildsCount,
+    health: runHealthChecks(),
+  })
 })
 
 // ---------- SEO: sitemap ----------
