@@ -1,5 +1,10 @@
 server/uploads/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+server/uploads/**/*.JPG filter=lfs diff=lfs merge=lfs -text
 server/uploads/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+server/uploads/**/*.JPEG filter=lfs diff=lfs merge=lfs -text
 server/uploads/**/*.png filter=lfs diff=lfs merge=lfs -text
+server/uploads/**/*.PNG filter=lfs diff=lfs merge=lfs -text
 server/uploads/**/*.gif filter=lfs diff=lfs merge=lfs -text
+server/uploads/**/*.GIF filter=lfs diff=lfs merge=lfs -text
 server/uploads/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
+server/uploads/**/*.MP4 filter=lfs diff=lfs merge=lfs -text
