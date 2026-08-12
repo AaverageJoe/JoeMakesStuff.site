@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 import { db } from './db.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const CSV_PATH = 'C:\\Users\\joe.allison\\Downloads\\Project+Pages.csv'
+const CSV_PATH = process.env.SEED_CSV_PATH || path.join(__dirname, 'data', 'Project+Pages.csv')
 const MANIFEST_PATH = path.join(__dirname, 'uploads', 'projects', 'manifest.json')
 
 const SORT_ORDER = [
