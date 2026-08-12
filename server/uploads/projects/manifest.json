@@ -1,0 +1,178 @@
+[
+  {
+    "slug": "bath-stadium",
+    "title": "Bath Stadium",
+    "showcase": "/uploads/projects/bath-stadium/showcase.png",
+    "bannerPoster": "/uploads/projects/bath-stadium/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/bath-stadium/banner.mp4",
+    "devImages": [
+      "/uploads/projects/bath-stadium/dev1.png",
+      "/uploads/projects/bath-stadium/dev2.png",
+      "/uploads/projects/bath-stadium/dev3.gif"
+    ],
+    "devVidPoster": "/uploads/projects/bath-stadium/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/bath-stadium/devvid.mp4"
+  },
+  {
+    "slug": "furtherspace---ar-vr",
+    "title": "FurtherSpace - AR/VR",
+    "showcase": "/uploads/projects/furtherspace---ar-vr/showcase.gif",
+    "bannerPoster": "/uploads/projects/furtherspace---ar-vr/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/furtherspace---ar-vr/banner.mp4",
+    "devImages": [
+      "/uploads/projects/furtherspace---ar-vr/dev1.gif",
+      "/uploads/projects/furtherspace---ar-vr/dev2.gif",
+      "/uploads/projects/furtherspace---ar-vr/dev3.png"
+    ],
+    "devVidPoster": "/uploads/projects/furtherspace---ar-vr/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/furtherspace---ar-vr/devvid.mp4"
+  },
+  {
+    "slug": "toyota--race-to-win",
+    "title": "Toyota- Race to Win",
+    "showcase": "/uploads/projects/toyota--race-to-win/showcase.gif",
+    "bannerPoster": "/uploads/projects/toyota--race-to-win/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/toyota--race-to-win/banner.mp4",
+    "devImages": [
+      "/uploads/projects/toyota--race-to-win/dev1.png",
+      "/uploads/projects/toyota--race-to-win/dev2.jpg",
+      "/uploads/projects/toyota--race-to-win/dev3.jpg"
+    ],
+    "devVidPoster": "/uploads/projects/toyota--race-to-win/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/toyota--race-to-win/devvid.mp4"
+  },
+  {
+    "slug": "ron---the-robot",
+    "title": "Ron - The Puzzle Robot",
+    "showcase": "/uploads/projects/ron---the-robot/showcase.gif",
+    "bannerPoster": "/uploads/projects/ron---the-robot/banner-poster.jpg",
+    "devImages": [
+      "/uploads/projects/ron---the-robot/dev1.jpg",
+      "/uploads/projects/ron---the-robot/dev2.jpg",
+      "/uploads/projects/ron---the-robot/dev3.jpg"
+    ],
+    "devVidPoster": "/uploads/projects/ron---the-robot/devvid-poster.jpg"
+  },
+  {
+    "slug": "thames-barrier",
+    "title": "Thames Barrier Model Restoration ",
+    "showcase": "/uploads/projects/thames-barrier/showcase.jpg",
+    "bannerPoster": "/uploads/projects/thames-barrier/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/thames-barrier/banner.mp4",
+    "devImages": [
+      "/uploads/projects/thames-barrier/dev1.jpg",
+      "/uploads/projects/thames-barrier/dev2.jpg",
+      "/uploads/projects/thames-barrier/dev3.jpg"
+    ],
+    "devVidPoster": "/uploads/projects/thames-barrier/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/thames-barrier/devvid.mp4"
+  },
+  {
+    "slug": "tier",
+    "title": "Tier - Student Fair Game",
+    "showcase": "/uploads/projects/tier/showcase.jpg",
+    "bannerPoster": "/uploads/projects/tier/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/tier/banner.mp4",
+    "devImages": [
+      "/uploads/projects/tier/dev1.jpg",
+      "/uploads/projects/tier/dev2.gif",
+      "/uploads/projects/tier/dev3.jpg"
+    ],
+    "devVidPoster": "/uploads/projects/tier/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/tier/devvid.mp4"
+  },
+  {
+    "slug": "robotics",
+    "title": "Ian - The Adi Robot",
+    "showcase": "/uploads/projects/robotics/showcase.jpg",
+    "bannerPoster": "/uploads/projects/robotics/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/robotics/banner.mp4",
+    "devImages": [
+      "/uploads/projects/robotics/dev1.jpg",
+      "/uploads/projects/robotics/dev2.jpg",
+      "/uploads/projects/robotics/dev3.jpg"
+    ],
+    "devVidPoster": "/uploads/projects/robotics/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/robotics/devvid.mp4"
+  },
+  {
+    "slug": "adi-predator-2024",
+    "title": "Predator 2024 - Football Sensors",
+    "showcase": "/uploads/projects/adi-predator-2024/showcase.jpg",
+    "bannerPoster": "/uploads/projects/adi-predator-2024/banner-poster.jpg",
+    "devImages": [
+      "/uploads/projects/adi-predator-2024/dev1.gif",
+      "/uploads/projects/adi-predator-2024/dev2.jpg",
+      "/uploads/projects/adi-predator-2024/dev3.gif"
+    ],
+    "devVidPoster": "/uploads/projects/adi-predator-2024/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/adi-predator-2024/devvid.mp4"
+  },
+  {
+    "slug": "axis---smart-shoe-insert",
+    "title": "Axis - Smart Shoe Insert",
+    "showcase": "/uploads/projects/axis---smart-shoe-insert/showcase.gif",
+    "bannerPoster": "/uploads/projects/axis---smart-shoe-insert/banner-poster.jpg",
+    "devImages": [
+      "/uploads/projects/axis---smart-shoe-insert/dev1.jpg",
+      "/uploads/projects/axis---smart-shoe-insert/dev2.png",
+      "/uploads/projects/axis---smart-shoe-insert/dev3.jpg"
+    ],
+    "devVidPoster": "/uploads/projects/axis---smart-shoe-insert/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/axis---smart-shoe-insert/devvid.mp4"
+  },
+  {
+    "slug": "scalerule",
+    "title": "Scale Rule",
+    "showcase": "/uploads/projects/scalerule/showcase.png",
+    "bannerPoster": "/uploads/projects/scalerule/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/scalerule/banner.mp4",
+    "devImages": [
+      "/uploads/projects/scalerule/dev1.gif",
+      "/uploads/projects/scalerule/dev2.png",
+      "/uploads/projects/scalerule/dev3.gif"
+    ],
+    "devVidPoster": "/uploads/projects/scalerule/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/scalerule/devvid.mp4"
+  },
+  {
+    "slug": "viewmaster-project",
+    "title": "Viewmaster - Interactive Exhibited ",
+    "showcase": "/uploads/projects/viewmaster-project/showcase.jpg",
+    "bannerPoster": "/uploads/projects/viewmaster-project/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/viewmaster-project/banner.mp4",
+    "devImages": [
+      "/uploads/projects/viewmaster-project/dev1.jpg",
+      "/uploads/projects/viewmaster-project/dev2.jpg",
+      "/uploads/projects/viewmaster-project/dev3.jpg"
+    ],
+    "devVidPoster": "/uploads/projects/viewmaster-project/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/viewmaster-project/devvid.mp4"
+  },
+  {
+    "slug": "sl72_project",
+    "title": "Adidas SL72 Arcades",
+    "showcase": "/uploads/projects/sl72_project/showcase.jpg",
+    "bannerPoster": "/uploads/projects/sl72_project/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/sl72_project/banner.mp4",
+    "devImages": [
+      "/uploads/projects/sl72_project/dev1.png",
+      "/uploads/projects/sl72_project/dev2.png",
+      "/uploads/projects/sl72_project/dev3.png"
+    ]
+  },
+  {
+    "slug": "predator-2025---football-cage",
+    "title": "Predator 2025 - Football Cage",
+    "showcase": "/uploads/projects/predator-2025---football-cage/showcase.gif",
+    "bannerPoster": "/uploads/projects/predator-2025---football-cage/banner-poster.jpg",
+    "bannerVideo": "/uploads/projects/predator-2025---football-cage/banner.mp4",
+    "devImages": [
+      "/uploads/projects/predator-2025---football-cage/dev1.png",
+      "/uploads/projects/predator-2025---football-cage/dev2.gif",
+      "/uploads/projects/predator-2025---football-cage/dev3.jpg"
+    ],
+    "devVidPoster": "/uploads/projects/predator-2025---football-cage/devvid-poster.jpg",
+    "devVidVideo": "/uploads/projects/predator-2025---football-cage/devvid.mp4"
+  }
+]

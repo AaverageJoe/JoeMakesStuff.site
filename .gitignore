@@ -12,12 +12,12 @@ dist
 dist-ssr
 *.local
 
-# Backend runtime data — never commit secrets, the database, or uploaded
-# media. server/uploads/ is ~1.1GB of real photos/video; it needs to be
-# copied to the server separately when deploying (rsync/scp), not via git.
+# Backend runtime data — never commit secrets or the database (which holds
+# the admin password hash and session secret). server/uploads/ is tracked
+# via Git LFS instead (see .gitattributes) — that's a deliberate, temporary
+# choice for testing Pi deployments; see README for the caveats.
 .env
 server/data/
-server/uploads/
 
 # One-off local backup made before the Aug 2026 image-optimization pass —
 # not real site content, just a safety copy; too large for git regardless.
