@@ -185,10 +185,11 @@ if (blocklistCount.n === 0) {
   const defaults = [
     'anal', 'anus', 'arse', 'arsehole', 'ass', 'asshole', 'bastard', 'bitch',
     'bollocks', 'bullshit', 'cock', 'crap', 'cum', 'cunt', 'dick', 'dildo',
-    'douche', 'dyke', 'fag', 'faggot', 'fuck', 'fucker', 'fucking', 'handjob',
-    'homo', 'jizz', 'kike', 'motherfucker', 'nigga', 'nigger', 'paki', 'penis',
-    'piss', 'porn', 'prick', 'pussy', 'rape', 'retard', 'scrotum', 'shit',
-    'slut', 'spic', 'tits', 'twat', 'vagina', 'wank', 'whore',
+    'douche', 'dyke', 'fag', 'faggot', 'fuck', 'fucked', 'fucker', 'fucking',
+    'handjob', 'homo', 'jizz', 'kike', 'motherfucker', 'nigga', 'nigger',
+    'paki', 'penis', 'piss', 'pissed', 'porn', 'prick', 'pussy', 'rape',
+    'retard', 'scrotum', 'shit', 'shitty', 'slut', 'spic', 'tits', 'twat',
+    'vagina', 'wank', 'whore',
   ]
   const insertWord = db.prepare(`INSERT OR IGNORE INTO crowd_ideas_blocklist (word) VALUES (?)`)
   defaults.forEach((w) => insertWord.run(w))

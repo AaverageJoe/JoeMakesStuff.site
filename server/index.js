@@ -794,14 +794,71 @@ function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// Common leetspeak/look-alike substitutions, e.g. "sh1t" / "5hit" / "$hit".
+const LEET_MAP = { 0: 'o', 1: 'i', '!': 'i', 3: 'e', 4: 'a', '@': 'a', 5: 's', $: 's', 7: 't', '+': 't', 8: 'b', 9: 'g', '|': 'i' }
+
+function deleetify(str) {
+  return str
+    .split('')
+    .map((ch) => LEET_MAP[ch] ?? ch)
+    .join('')
+}
+
+// "fuuuuck" -> "fuck", "bollocks" -> "bolocks": collapse any run of a
+// repeated character down to one. Applied identically to both the input and
+// the blocklist word before comparing, so this doesn't need to know in
+// advance which letters a given word normally doubles up.
+function collapseRepeats(str) {
+  return str.replace(/(.)\1+/g, '$1')
+}
+
+// Cleans up common ways people dodge a word filter — inserted punctuation
+// ("f.u.c.k", "f-u-c-k", "f*ck"), spelling a word out one letter at a time
+// with real spaces ("f u c k"), leetspeak, and stretched-out letters — while
+// still relying on \b word-boundary matching below, so it doesn't start
+// flagging substrings buried in unrelated words ("assassin", "class").
+function normalizeForFuzzyMatch(text) {
+  let s = text.toLowerCase()
+  s = s.replace(/\b(?:[a-z0-9]\s+){2,}[a-z0-9]\b/g, (m) => m.replace(/\s+/g, ''))
+  s = s.replace(/([a-z0-9])[^a-z0-9\s]+(?=[a-z0-9])/g, '$1')
+  s = deleetify(s)
+  return collapseRepeats(s)
+}
+
 // Whole-word, case-insensitive match — so e.g. a blocked word "ass" doesn't
-// also flag "assassin" or "class".
+// also flag "assassin" or "class". Checked against both the text as typed
+// and a fuzzy-normalized version, to catch obfuscated spellings too.
 function containsWord(text, word) {
-  return new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(text)
+  const collapsedWord = collapseRepeats(word)
+  const pattern = new RegExp(`\\b${escapeRegExp(collapsedWord)}\\b`, 'i')
+  return pattern.test(text) || pattern.test(normalizeForFuzzyMatch(text))
+}
+
+// Handles a single symbol standing in for a whole letter — "f*ck", "sh*t",
+// "a**hole" — which punctuation-stripping can't recover, since there's no
+// way to tell how many letters a "*" replaced. Instead: split into
+// space-delimited tokens, and for any token containing a censor symbol,
+// check whether it's the exact same length as a blocklist word with every
+// non-wildcard character matching it position-for-position.
+const CENSOR_WILDCARD = /[*#%]/
+function tokenize(text) {
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .map((t) => t.replace(/^[^a-z0-9*#%]+|[^a-z0-9*#%]+$/g, ''))
+}
+function wildcardMatchesWord(token, word) {
+  if (!CENSOR_WILDCARD.test(token) || token.length !== word.length) return false
+  for (let i = 0; i < token.length; i++) {
+    if (CENSOR_WILDCARD.test(token[i])) continue
+    if (token[i] !== word[i]) return false
+  }
+  return true
 }
 
 function findBlockedWord(text, words) {
-  return words.find((w) => containsWord(text, w))
+  const tokens = tokenize(text)
+  return words.find((w) => containsWord(text, w) || tokens.some((t) => wildcardMatchesWord(t, w)))
 }
 
 function getCrowdIdeasBlocklist() {
