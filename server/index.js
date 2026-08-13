@@ -14,6 +14,7 @@ import { db } from './db.js'
 import { verifyLogin, requireAuth, getAdmin, setPassword } from './auth.js'
 import { FONT_KEYS } from '../src/fonts.js'
 import { buildMeta, injectSeo, generateSitemap } from './seo.js'
+import { printCrowdIdea } from './printer.js'
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
@@ -761,6 +762,69 @@ app.get('/api/stats/dashboard', (req, res) => {
     tinyBuildsCount,
     health: runHealthChecks(),
   })
+})
+
+// ---------- Crowd Sourcing Ideas ----------
+const CROWD_IDEA_NAME_MAX = 30
+const CROWD_IDEA_TEXT_MAX = 100
+const CROWD_IDEA_LIMIT = 5
+const CROWD_VISITOR_COOKIE = 'cs_visitor'
+
+// Identifies a submitter by browser (a long-lived cookie), not by IP —
+// several people at the same event are typically on the same WiFi/NAT, so
+// an IP-based limit (like hashVisitor() above) would cap the whole crowd
+// together instead of 5 each.
+function getCrowdVisitorId(req, res) {
+  let id = req.cookies?.[CROWD_VISITOR_COOKIE]
+  if (!id) {
+    id = crypto.randomUUID()
+    res.cookie(CROWD_VISITOR_COOKIE, id, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+    })
+  }
+  return id
+}
+
+app.get('/api/crowd-ideas/remaining', (req, res) => {
+  const visitorId = getCrowdVisitorId(req, res)
+  const count = db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas WHERE visitor_id = ?`).get(visitorId).n
+  res.json({ remaining: Math.max(0, CROWD_IDEA_LIMIT - count), limit: CROWD_IDEA_LIMIT })
+})
+
+app.post('/api/crowd-ideas', (req, res) => {
+  const name = (req.body?.name || '').trim()
+  const idea = (req.body?.idea || '').trim()
+  if (!name) return res.status(400).json({ error: 'Name is required' })
+  if (!idea) return res.status(400).json({ error: 'Idea is required' })
+  if (name.length > CROWD_IDEA_NAME_MAX)
+    return res.status(400).json({ error: `Name must be ${CROWD_IDEA_NAME_MAX} characters or fewer` })
+  if (idea.length > CROWD_IDEA_TEXT_MAX)
+    return res.status(400).json({ error: `Idea must be ${CROWD_IDEA_TEXT_MAX} characters or fewer` })
+
+  const visitorId = getCrowdVisitorId(req, res)
+  const count = db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas WHERE visitor_id = ?`).get(visitorId).n
+  if (count >= CROWD_IDEA_LIMIT) {
+    return res.status(429).json({ error: `You've already submitted the maximum of ${CROWD_IDEA_LIMIT} ideas.` })
+  }
+
+  let printed = true
+  try {
+    printCrowdIdea({ name, idea })
+  } catch (err) {
+    printed = false
+    console.warn(`[crowd-ideas] print failed: ${err.message}`)
+  }
+
+  db.prepare(`INSERT INTO crowd_ideas (name, idea, visitor_id, printed) VALUES (?, ?, ?, ?)`).run(
+    name,
+    idea,
+    visitorId,
+    printed ? 1 : 0
+  )
+
+  res.json({ ok: true, printed, remaining: CROWD_IDEA_LIMIT - (count + 1) })
 })
 
 // ---------- SEO: sitemap ----------

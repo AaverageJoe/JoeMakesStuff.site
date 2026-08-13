@@ -62,6 +62,10 @@ export const api = {
 
   getDashboardStats: () => request('/stats/dashboard'),
 
+  getCrowdIdeasRemaining: () => request('/crowd-ideas/remaining'),
+  submitCrowdIdea: (name, idea) =>
+    request('/crowd-ideas', { method: 'POST', body: JSON.stringify({ name, idea }) }),
+
   login: (username, password) =>
     request('/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => request('/logout', { method: 'POST' }),

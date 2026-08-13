@@ -122,6 +122,86 @@ section {
   font-size: clamp(28px, 4vw, 40px);
 }
 
+.tiny-builds-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.crowd-ideas-btn {
+  flex-shrink: 0;
+}
+
+/* ---------- Crowd Sourcing Ideas ---------- */
+.crowd-ideas-container {
+  max-width: 480px;
+}
+
+.crowd-ideas-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.crowd-ideas-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  position: relative;
+}
+
+.crowd-ideas-form input,
+.crowd-ideas-form textarea {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.crowd-ideas-form input:focus,
+.crowd-ideas-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.crowd-ideas-count {
+  align-self: flex-end;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.crowd-ideas-remaining {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.crowd-ideas-status {
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.crowd-ideas-status-success {
+  color: var(--accent);
+}
+
+.crowd-ideas-status-error {
+  color: #e5484d;
+}
+
+.crowd-ideas-status-info {
+  color: var(--text-dim);
+}
+
 /* ---------- Header ---------- */
 .site-header {
   position: sticky;

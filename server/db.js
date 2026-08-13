@@ -100,6 +100,17 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_events_type ON events(type);
+
+  CREATE TABLE IF NOT EXISTS crowd_ideas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    idea TEXT NOT NULL,
+    visitor_id TEXT NOT NULL,
+    printed INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_crowd_ideas_visitor ON crowd_ideas(visitor_id);
 `)
 
 // Migration: `visible` was added after the initial schema — existing

@@ -16,6 +16,7 @@ const TinyBuildsPage = lazy(() => import('./pages/TinyBuildsPage'))
 const ServicesPage = lazy(() => import('./pages/ServicesPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const ContactPage = lazy(() => import('./pages/ContactPage'))
+const CrowdIdeasPage = lazy(() => import('./pages/CrowdIdeasPage'))
 
 function Routes() {
   const { path } = useRouter()
@@ -31,6 +32,7 @@ function Routes() {
   else if (path === '/services') page = <ServicesPage />
   else if (path === '/about') page = <AboutPage />
   else if (path === '/contact') page = <ContactPage />
+  else if (path === '/crowd-ideas') page = <CrowdIdeasPage />
   else page = <Home />
 
   return (

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { api } from '../api'
 import { useCopy } from '../copy'
+import { Link } from '../router'
 import TinyBuildsGrid from './TinyBuildsGrid'
 
 // Lazy-loaded: Grid is the default mode, so only it ships eagerly. The other
@@ -31,25 +32,31 @@ export default function TinyBuilds() {
   return (
     <section id="tiny-builds">
       <div className="container">
-        <div className="section-head">
-          <div className="eyebrow">{copy.tiny_builds_eyebrow}</div>
-          <h2>{copy.tiny_builds_heading}</h2>
-          <p>{copy.tiny_builds_intro}</p>
+        <div className="tiny-builds-head-row">
+          <div className="section-head">
+            <div className="eyebrow">{copy.tiny_builds_eyebrow}</div>
+            <h2>{copy.tiny_builds_heading}</h2>
+            <p>{copy.tiny_builds_intro}</p>
 
-          <div className="view-modes" role="tablist" aria-label="Tiny Builds view mode">
-            {MODES.map((m) => (
-              <button
-                key={m.key}
-                type="button"
-                role="tab"
-                aria-selected={mode === m.key}
-                className={`view-mode-btn${mode === m.key ? ' active' : ''}`}
-                onClick={() => setMode(m.key)}
-              >
-                {m.label}
-              </button>
-            ))}
+            <div className="view-modes" role="tablist" aria-label="Tiny Builds view mode">
+              {MODES.map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === m.key}
+                  className={`view-mode-btn${mode === m.key ? ' active' : ''}`}
+                  onClick={() => setMode(m.key)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <Link to="/crowd-ideas" className="btn btn-ghost crowd-ideas-btn">
+            Crowd Sourcing Ideas
+          </Link>
         </div>
 
         {items.length > 0 && (
