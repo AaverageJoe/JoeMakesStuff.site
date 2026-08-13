@@ -89,27 +89,80 @@ function formatIdeaTime(iso) {
   return new Date(`${iso.replace(' ', 'T')}Z`).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
-function CrowdIdeasQueue({ ideas }) {
+function CrowdIdeasCard({ summary, onOpen }) {
+  const count = summary?.count ?? 0
   return (
-    <div className="stat-card queue-card">
-      <div className="stat-label">Crowd Ideas Queue</div>
-      {!ideas || ideas.length === 0 ? (
-        <div className="queue-empty">No submissions yet</div>
-      ) : (
-        <div className="queue-list">
-          {ideas.map((idea) => (
-            <div className="queue-row" key={idea.id}>
+    <button type="button" className="stat-card wide-card crowd-ideas-card" onClick={onOpen}>
+      <div className="stat-label">Crowd Ideas</div>
+      <div className="stat-value">
+        {formatNumber(count)} submission{count === 1 ? '' : 's'}
+      </div>
+      <div className="stat-sub crowd-ideas-card-last">
+        {summary?.lastIdea ? `"${summary.lastIdea}" — ${summary.lastName}` : 'No submissions yet'}
+      </div>
+      <div className={`printer-pill ${summary?.printerConnected ? 'ok' : 'fail'}`}>
+        <span className="printer-pill-dot" />
+        {summary?.printerConnected ? 'Printer online' : 'Printer offline'}
+      </div>
+    </button>
+  )
+}
+
+function CrowdIdeasModal({ onClose }) {
+  const [ideas, setIdeas] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    api
+      .getDashboardCrowdIdeas()
+      .then(setIdeas)
+      .catch(() => setError("Can't load submissions."))
+  }, [])
+
+  const handleDelete = async (id) => {
+    setError('')
+    try {
+      await api.deleteDashboardCrowdIdea(id)
+      setIdeas((prev) => prev.filter((i) => i.id !== id))
+    } catch {
+      setError('Could not delete that entry.')
+    }
+  }
+
+  return (
+    <div className="debug-overlay" onClick={onClose}>
+      <div className="debug-panel crowd-ideas-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="debug-panel-header">
+          <h2>Crowd Ideas {ideas ? `(${ideas.length})` : ''}</h2>
+          <button type="button" className="debug-close" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        {error && <div className="crowd-ideas-panel-error">{error}</div>}
+        <div className="debug-log">
+          {ideas === null && !error && <div className="debug-row">Loading…</div>}
+          {ideas?.length === 0 && <div className="debug-row">No submissions yet.</div>}
+          {ideas?.map((idea) => (
+            <div key={idea.id} className="debug-row crowd-ideas-row">
               <span
-                className={`queue-print-dot ${idea.printed ? 'ok' : 'fail'}`}
+                className={`printer-pill-dot ${idea.printed ? 'ok' : 'fail'}`}
                 title={idea.printed ? 'Printed' : 'Print failed'}
               />
-              <span className="queue-name">{idea.name}</span>
-              <span className="queue-idea">{idea.idea}</span>
-              <span className="queue-time">{formatIdeaTime(idea.created_at)}</span>
+              <span className="crowd-ideas-row-name">{idea.name}</span>
+              <span className="crowd-ideas-row-idea">{idea.idea}</span>
+              <span className="crowd-ideas-row-time">{formatIdeaTime(idea.created_at)}</span>
+              <button
+                type="button"
+                className="crowd-ideas-row-delete"
+                onClick={() => handleDelete(idea.id)}
+                aria-label={`Delete submission from ${idea.name}`}
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -138,6 +191,7 @@ export default function DashboardApp() {
   const [now, setNow] = useState(new Date())
   const [error, setError] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
+  const [showCrowdModal, setShowCrowdModal] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -192,19 +246,14 @@ export default function DashboardApp() {
           <StatCard label="Contact Requests" value={formatNumber(stats.contactRequests)} />
           <StatCard label="Server Uptime" value={formatUptime(stats.uptimeSeconds)} />
           <StatCard label="Site Storage" value={formatBytes(stats.storageBytes)} />
-          <StatCard
-            label="Most Viewed Case Study"
-            value={stats.mostViewedProject?.title || '—'}
-            sub={stats.mostViewedProject ? `${formatNumber(stats.mostViewedProject.views)} views` : 'No data yet'}
-            className="wide-card"
-          />
+          <CrowdIdeasCard summary={stats.crowdIdeasSummary} onOpen={() => setShowCrowdModal(true)} />
           <StatusCard health={stats.health} onOpen={() => setShowDebug(true)} />
           <UsageChart days={last7Days} />
-          <CrowdIdeasQueue ideas={stats.crowdIdeas} />
         </div>
       )}
 
       {showDebug && <DebugModal health={stats?.health} onClose={() => setShowDebug(false)} />}
+      {showCrowdModal && <CrowdIdeasModal onClose={() => setShowCrowdModal(false)} />}
 
       <footer className="dashboard-footer">
         {stats?.serverStartedAt && `Server started ${new Date(stats.serverStartedAt).toLocaleString('en-GB')}`}

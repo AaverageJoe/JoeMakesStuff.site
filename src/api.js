@@ -61,6 +61,8 @@ export const api = {
     request('/track/event', { method: 'POST', body: JSON.stringify({ type, path }) }).catch(() => {}),
 
   getDashboardStats: () => request('/stats/dashboard'),
+  getDashboardCrowdIdeas: () => request('/stats/dashboard/crowd-ideas'),
+  deleteDashboardCrowdIdea: (id) => request(`/stats/dashboard/crowd-ideas/${id}`, { method: 'DELETE' }),
 
   getCrowdIdeasRemaining: () => request('/crowd-ideas/remaining'),
   submitCrowdIdea: (name, idea) =>

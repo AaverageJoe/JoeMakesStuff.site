@@ -758,9 +758,8 @@ app.get('/api/stats/dashboard', (req, res) => {
 
   const projectCount = db.prepare(`SELECT COUNT(*) AS n FROM projects WHERE visible = 1`).get().n
   const tinyBuildsCount = db.prepare(`SELECT COUNT(*) AS n FROM tiny_builds`).get().n
-  const crowdIdeas = db
-    .prepare(`SELECT id, name, idea, printed, created_at FROM crowd_ideas ORDER BY id DESC LIMIT 20`)
-    .all()
+  const crowdIdeasCount = db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas`).get().n
+  const lastCrowdIdea = db.prepare(`SELECT name, idea, created_at FROM crowd_ideas ORDER BY id DESC LIMIT 1`).get()
 
   res.json({
     uptimeSeconds: Math.floor((Date.now() - SERVER_STARTED_AT) / 1000),
@@ -774,9 +773,31 @@ app.get('/api/stats/dashboard', (req, res) => {
     mostViewedProject,
     projectCount,
     tinyBuildsCount,
-    crowdIdeas,
+    crowdIdeasSummary: {
+      count: crowdIdeasCount,
+      lastName: lastCrowdIdea?.name ?? null,
+      lastIdea: lastCrowdIdea?.idea ?? null,
+      lastCreatedAt: lastCrowdIdea?.created_at ?? null,
+      printerConnected: isPrinterConnected(),
+    },
     health: runHealthChecks(),
   })
+})
+
+// Full submissions list + delete, for the dashboard's Crowd Ideas modal.
+// Nested under /api/stats/dashboard so Caddy's existing Basic Auth guard on
+// that prefix covers these too — deliberately not requireAuth, since the
+// dashboard has no app-level login of its own.
+app.get('/api/stats/dashboard/crowd-ideas', (req, res) => {
+  const ideas = db
+    .prepare(`SELECT id, name, idea, printed, created_at FROM crowd_ideas ORDER BY id DESC LIMIT 500`)
+    .all()
+  res.json(ideas)
+})
+
+app.delete('/api/stats/dashboard/crowd-ideas/:id', (req, res) => {
+  db.prepare(`DELETE FROM crowd_ideas WHERE id = ?`).run(req.params.id)
+  res.status(204).end()
 })
 
 // ---------- Crowd Sourcing Ideas ----------
