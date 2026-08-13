@@ -7,6 +7,12 @@ const DEVICE = process.env.PRINTER_DEVICE || '/dev/usb/lp0'
 const LINE_WIDTH = 32
 const ESC_INIT = Buffer.from([0x1b, 0x40]) // ESC @ — reset/initialize
 
+// The printer is mounted physically upside down, so flip printing 180° to
+// compensate — set PRINTER_UPSIDE_DOWN=false in .env if it's ever remounted
+// the right way up.
+const UPSIDE_DOWN = process.env.PRINTER_UPSIDE_DOWN !== 'false'
+const ESC_UPSIDE_DOWN_ON = Buffer.from([0x1b, 0x7b, 0x01]) // ESC { 1
+
 // The printer only understands basic ASCII — anything else (accents,
 // emoji, curly quotes) gets swapped for '?' rather than sent raw and
 // garbling the print.
@@ -36,8 +42,10 @@ function wrapText(text, width = LINE_WIDTH) {
 export function printCrowdIdea({ name, idea }) {
   const rule = '-'.repeat(LINE_WIDTH)
   const lines = [rule, `From: ${toPrintableAscii(name)}`, '', ...wrapText(idea), '', rule, '', '']
-  const data = Buffer.concat([ESC_INIT, Buffer.from(lines.join('\n') + '\n', 'ascii')])
-  fs.writeFileSync(DEVICE, data)
+  const parts = [ESC_INIT]
+  if (UPSIDE_DOWN) parts.push(ESC_UPSIDE_DOWN_ON)
+  parts.push(Buffer.from(lines.join('\n') + '\n', 'ascii'))
+  fs.writeFileSync(DEVICE, Buffer.concat(parts))
 }
 
 // Cheap, non-invasive check (no bytes sent) for the public submission page
