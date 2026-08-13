@@ -65,6 +65,12 @@ export const api = {
   getCrowdIdeasRemaining: () => request('/crowd-ideas/remaining'),
   submitCrowdIdea: (name, idea) =>
     request('/crowd-ideas', { method: 'POST', body: JSON.stringify({ name, idea }) }),
+  getCrowdIdeasPrinterStatus: () => request('/crowd-ideas/printer-status'),
+
+  getCrowdIdeasBlocklist: () => request('/admin/crowd-ideas/blocklist'),
+  addCrowdIdeasBlockedWord: (word) =>
+    request('/admin/crowd-ideas/blocklist', { method: 'POST', body: JSON.stringify({ word }) }),
+  deleteCrowdIdeasBlockedWord: (id) => request(`/admin/crowd-ideas/blocklist/${id}`, { method: 'DELETE' }),
 
   login: (username, password) =>
     request('/login', { method: 'POST', body: JSON.stringify({ username, password }) }),

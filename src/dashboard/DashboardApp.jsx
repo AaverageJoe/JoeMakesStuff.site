@@ -85,6 +85,35 @@ function DebugModal({ health, onClose }) {
   )
 }
 
+function formatIdeaTime(iso) {
+  return new Date(`${iso.replace(' ', 'T')}Z`).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+}
+
+function CrowdIdeasQueue({ ideas }) {
+  return (
+    <div className="stat-card queue-card">
+      <div className="stat-label">Crowd Ideas Queue</div>
+      {!ideas || ideas.length === 0 ? (
+        <div className="queue-empty">No submissions yet</div>
+      ) : (
+        <div className="queue-list">
+          {ideas.map((idea) => (
+            <div className="queue-row" key={idea.id}>
+              <span
+                className={`queue-print-dot ${idea.printed ? 'ok' : 'fail'}`}
+                title={idea.printed ? 'Printed' : 'Print failed'}
+              />
+              <span className="queue-name">{idea.name}</span>
+              <span className="queue-idea">{idea.idea}</span>
+              <span className="queue-time">{formatIdeaTime(idea.created_at)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function UsageChart({ days }) {
   const max = Math.max(1, ...days.map((d) => d.views))
   return (
@@ -171,6 +200,7 @@ export default function DashboardApp() {
           />
           <StatusCard health={stats.health} onOpen={() => setShowDebug(true)} />
           <UsageChart days={last7Days} />
+          <CrowdIdeasQueue ideas={stats.crowdIdeas} />
         </div>
       )}
 

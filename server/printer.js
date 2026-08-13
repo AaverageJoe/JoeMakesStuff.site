@@ -39,3 +39,15 @@ export function printCrowdIdea({ name, idea }) {
   const data = Buffer.concat([ESC_INIT, Buffer.from(lines.join('\n') + '\n', 'ascii')])
   fs.writeFileSync(DEVICE, data)
 }
+
+// Cheap, non-invasive check (no bytes sent) for the public submission page
+// and the dashboard health tile — just confirms the USB device node is
+// present and writable, not that paper is loaded or the head is heating.
+export function isPrinterConnected() {
+  try {
+    fs.accessSync(DEVICE, fs.constants.W_OK)
+    return true
+  } catch {
+    return false
+  }
+}

@@ -4,6 +4,17 @@ import { api } from '../api'
 const NAME_MAX = 30
 const IDEA_MAX = 100
 const LIMIT = 5
+const PRINTER_POLL_MS = 20000
+
+function PrinterStatus({ connected }) {
+  if (connected === null) return null
+  return (
+    <p className={`crowd-ideas-printer-status ${connected ? 'ok' : 'fail'}`}>
+      <span className="crowd-ideas-printer-dot" />
+      {connected ? 'Printer online' : "Printer offline — your idea will still be saved, just won't print"}
+    </p>
+  )
+}
 
 export default function CrowdIdeasPage() {
   const [name, setName] = useState('')
@@ -11,12 +22,29 @@ export default function CrowdIdeasPage() {
   const [remaining, setRemaining] = useState(null)
   const [status, setStatus] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [printerConnected, setPrinterConnected] = useState(null)
 
   useEffect(() => {
     api
       .getCrowdIdeasRemaining()
       .then((r) => setRemaining(r.remaining))
       .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const check = () => {
+      api
+        .getCrowdIdeasPrinterStatus()
+        .then((r) => !cancelled && setPrinterConnected(r.connected))
+        .catch(() => !cancelled && setPrinterConnected(false))
+    }
+    check()
+    const poll = setInterval(check, PRINTER_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(poll)
+    }
   }, [])
 
   const handleSubmit = async (e) => {
@@ -27,6 +55,7 @@ export default function CrowdIdeasPage() {
     try {
       const res = await api.submitCrowdIdea(name.trim(), idea.trim())
       setRemaining(res.remaining)
+      setPrinterConnected(res.printed)
       setStatus({
         type: 'success',
         message: res.printed
@@ -52,6 +81,8 @@ export default function CrowdIdeasPage() {
           <h2>Crowd Sourcing Ideas</h2>
           <p>Drop your name and an idea below — it'll print out on the spot.</p>
         </div>
+
+        <PrinterStatus connected={printerConnected} />
 
         {outOfSubmissions ? (
           <p className="crowd-ideas-status crowd-ideas-status-info">

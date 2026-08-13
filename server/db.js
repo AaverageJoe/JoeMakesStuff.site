@@ -111,6 +111,12 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_crowd_ideas_visitor ON crowd_ideas(visitor_id);
+
+  CREATE TABLE IF NOT EXISTS crowd_ideas_blocklist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    word TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `)
 
 // Migration: `visible` was added after the initial schema — existing
@@ -170,4 +176,20 @@ if (tinyBuildCount.n === 0) {
     `INSERT INTO tiny_builds (url, kind, position) VALUES (?, 'image', ?)`
   )
   files.forEach((f, i) => insertTinyBuild.run(`/images/tiny-builds/${f}`, i))
+}
+
+// Seed the Crowd Sourcing Ideas blocklist with a starter set of common
+// profanity — editable (add/remove) from /admin from then on.
+const blocklistCount = db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas_blocklist`).get()
+if (blocklistCount.n === 0) {
+  const defaults = [
+    'anal', 'anus', 'arse', 'arsehole', 'ass', 'asshole', 'bastard', 'bitch',
+    'bollocks', 'bullshit', 'cock', 'crap', 'cum', 'cunt', 'dick', 'dildo',
+    'douche', 'dyke', 'fag', 'faggot', 'fuck', 'fucker', 'fucking', 'handjob',
+    'homo', 'jizz', 'kike', 'motherfucker', 'nigga', 'nigger', 'paki', 'penis',
+    'piss', 'porn', 'prick', 'pussy', 'rape', 'retard', 'scrotum', 'shit',
+    'slut', 'spic', 'tits', 'twat', 'vagina', 'wank', 'whore',
+  ]
+  const insertWord = db.prepare(`INSERT OR IGNORE INTO crowd_ideas_blocklist (word) VALUES (?)`)
+  defaults.forEach((w) => insertWord.run(w))
 }

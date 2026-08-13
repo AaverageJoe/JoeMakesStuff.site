@@ -14,7 +14,7 @@ import { db } from './db.js'
 import { verifyLogin, requireAuth, getAdmin, setPassword } from './auth.js'
 import { FONT_KEYS } from '../src/fonts.js'
 import { buildMeta, injectSeo, generateSitemap } from './seo.js'
-import { printCrowdIdea } from './printer.js'
+import { printCrowdIdea, isPrinterConnected } from './printer.js'
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
@@ -149,6 +149,17 @@ function runHealthChecks() {
     })
   } catch (err) {
     checks.push({ name: 'Admin account', ok: false, detail: err.message })
+  }
+
+  try {
+    const connected = isPrinterConnected()
+    checks.push({
+      name: 'Thermal printer',
+      ok: connected,
+      detail: connected ? 'USB device present' : 'Not detected — check USB and power',
+    })
+  } catch (err) {
+    checks.push({ name: 'Thermal printer', ok: false, detail: err.message })
   }
 
   try {
@@ -747,6 +758,9 @@ app.get('/api/stats/dashboard', (req, res) => {
 
   const projectCount = db.prepare(`SELECT COUNT(*) AS n FROM projects WHERE visible = 1`).get().n
   const tinyBuildsCount = db.prepare(`SELECT COUNT(*) AS n FROM tiny_builds`).get().n
+  const crowdIdeas = db
+    .prepare(`SELECT id, name, idea, printed, created_at FROM crowd_ideas ORDER BY id DESC LIMIT 20`)
+    .all()
 
   res.json({
     uptimeSeconds: Math.floor((Date.now() - SERVER_STARTED_AT) / 1000),
@@ -760,6 +774,7 @@ app.get('/api/stats/dashboard', (req, res) => {
     mostViewedProject,
     projectCount,
     tinyBuildsCount,
+    crowdIdeas,
     health: runHealthChecks(),
   })
 })
@@ -769,6 +784,29 @@ const CROWD_IDEA_NAME_MAX = 30
 const CROWD_IDEA_TEXT_MAX = 100
 const CROWD_IDEA_LIMIT = 5
 const CROWD_VISITOR_COOKIE = 'cs_visitor'
+
+// Always blocked from the name field, regardless of the admin-editable
+// blocklist below — people kept submitting as "Joe"/"Joseph" pretending to
+// be the site owner.
+const CROWD_NAME_ALWAYS_BLOCKED = ['joe', 'joseph']
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Whole-word, case-insensitive match — so e.g. a blocked word "ass" doesn't
+// also flag "assassin" or "class".
+function containsWord(text, word) {
+  return new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(text)
+}
+
+function findBlockedWord(text, words) {
+  return words.find((w) => containsWord(text, w))
+}
+
+function getCrowdIdeasBlocklist() {
+  return db.prepare(`SELECT id, word FROM crowd_ideas_blocklist ORDER BY word ASC`).all()
+}
 
 // Identifies a submitter by browser (a long-lived cookie), not by IP —
 // several people at the same event are typically on the same WiFi/NAT, so
@@ -803,6 +841,14 @@ app.post('/api/crowd-ideas', (req, res) => {
   if (idea.length > CROWD_IDEA_TEXT_MAX)
     return res.status(400).json({ error: `Idea must be ${CROWD_IDEA_TEXT_MAX} characters or fewer` })
 
+  const blockedWords = getCrowdIdeasBlocklist().map((w) => w.word)
+  if (findBlockedWord(name, [...blockedWords, ...CROWD_NAME_ALWAYS_BLOCKED])) {
+    return res.status(400).json({ error: "That name isn't allowed — please use something else." })
+  }
+  if (findBlockedWord(idea, blockedWords)) {
+    return res.status(400).json({ error: "Your idea contains language that isn't allowed here." })
+  }
+
   const visitorId = getCrowdVisitorId(req, res)
   const count = db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas WHERE visitor_id = ?`).get(visitorId).n
   if (count >= CROWD_IDEA_LIMIT) {
@@ -825,6 +871,31 @@ app.post('/api/crowd-ideas', (req, res) => {
   )
 
   res.json({ ok: true, printed, remaining: CROWD_IDEA_LIMIT - (count + 1) })
+})
+
+app.get('/api/crowd-ideas/printer-status', (req, res) => {
+  res.json({ connected: isPrinterConnected() })
+})
+
+app.get('/api/admin/crowd-ideas/blocklist', requireAuth, (req, res) => {
+  res.json(getCrowdIdeasBlocklist())
+})
+
+app.post('/api/admin/crowd-ideas/blocklist', requireAuth, (req, res) => {
+  const word = (req.body?.word || '').trim().toLowerCase()
+  if (!word) return res.status(400).json({ error: 'Word is required' })
+  try {
+    const info = db.prepare(`INSERT INTO crowd_ideas_blocklist (word) VALUES (?)`).run(word)
+    res.json({ id: info.lastInsertRowid, word })
+  } catch (err) {
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: 'That word is already blocked' })
+    throw err
+  }
+})
+
+app.delete('/api/admin/crowd-ideas/blocklist/:id', requireAuth, (req, res) => {
+  db.prepare(`DELETE FROM crowd_ideas_blocklist WHERE id = ?`).run(req.params.id)
+  res.status(204).end()
 })
 
 // ---------- SEO: sitemap ----------

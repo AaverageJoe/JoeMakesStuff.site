@@ -139,6 +139,30 @@ section {
   max-width: 480px;
 }
 
+.crowd-ideas-printer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+}
+
+.crowd-ideas-printer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.crowd-ideas-printer-status.ok .crowd-ideas-printer-dot {
+  background: #3ddc84;
+}
+
+.crowd-ideas-printer-status.fail .crowd-ideas-printer-dot {
+  background: #e5484d;
+}
+
 .crowd-ideas-form {
   display: flex;
   flex-direction: column;

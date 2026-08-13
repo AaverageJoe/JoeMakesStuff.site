@@ -89,7 +89,7 @@ body {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
   gap: clamp(10px, 1.4vw, 18px);
 }
 
@@ -281,6 +281,71 @@ body {
   grid-column: span 3;
 }
 
+.queue-card {
+  grid-column: span 4;
+  overflow: hidden;
+}
+
+.queue-empty {
+  color: var(--text-dim);
+  font-size: clamp(12px, 1.2vw, 15px);
+}
+
+.queue-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.queue-row {
+  display: grid;
+  grid-template-columns: auto minmax(80px, 140px) 1fr auto;
+  align-items: center;
+  gap: clamp(6px, 1vw, 14px);
+  padding: 4px 0;
+  font-size: clamp(11px, 1.1vw, 14px);
+  border-bottom: 1px solid var(--border);
+}
+
+.queue-print-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.queue-print-dot.ok {
+  background: #3ddc84;
+}
+
+.queue-print-dot.fail {
+  background: #e5484d;
+}
+
+.queue-name {
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-idea {
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-time {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
 .usage-bars {
   flex: 1;
   display: flex;
@@ -343,7 +408,8 @@ body {
     grid-auto-rows: minmax(140px, auto);
   }
   .wide-card,
-  .usage-card {
+  .usage-card,
+  .queue-card {
     grid-column: span 2;
   }
 }

@@ -7,6 +7,7 @@ import TinyBuildsAdmin from './TinyBuildsAdmin'
 import ServicesAdmin from './ServicesAdmin'
 import SiteSettings from './SiteSettings'
 import SiteCopyAdmin from './SiteCopyAdmin'
+import CrowdIdeasAdmin from './CrowdIdeasAdmin'
 import ChangePassword from './ChangePassword'
 import './admin.css'
 
@@ -15,6 +16,7 @@ const TABS = [
   { key: 'tiny-builds', label: 'Tiny Builds' },
   { key: 'services', label: 'Services' },
   { key: 'copy', label: 'Site Copy' },
+  { key: 'crowd-ideas', label: 'Crowd Ideas' },
   { key: 'settings', label: 'Site Settings' },
 ]
 
@@ -98,6 +100,7 @@ export default function AdminApp() {
       <main className="admin-main">
         {view === 'settings' && <SiteSettings />}
         {view === 'copy' && <SiteCopyAdmin />}
+        {view === 'crowd-ideas' && <CrowdIdeasAdmin />}
         {view === 'tiny-builds' && <TinyBuildsAdmin />}
         {view === 'services' && <ServicesAdmin />}
         {view === 'projects' &&
