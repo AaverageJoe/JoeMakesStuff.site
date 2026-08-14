@@ -887,6 +887,19 @@ function getCrowdIdeasBlocklist() {
   return db.prepare(`SELECT id, word FROM crowd_ideas_blocklist ORDER BY word ASC`).all()
 }
 
+// Counts only submissions made since the admin last reset the limit —
+// resetting doesn't delete anything, it just moves this watermark forward
+// so everyone's count effectively goes back to 0 without losing history.
+function getVisitorSubmissionCount(visitorId) {
+  const { crowd_ideas_reset_at: resetAt } = db.prepare(`SELECT crowd_ideas_reset_at FROM settings WHERE id = 1`).get()
+  if (resetAt) {
+    return db
+      .prepare(`SELECT COUNT(*) AS n FROM crowd_ideas WHERE visitor_id = ? AND created_at > ?`)
+      .get(visitorId, resetAt).n
+  }
+  return db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas WHERE visitor_id = ?`).get(visitorId).n
+}
+
 // Identifies a submitter by browser (a long-lived cookie), not by IP —
 // several people at the same event are typically on the same WiFi/NAT, so
 // an IP-based limit (like hashVisitor() above) would cap the whole crowd
@@ -906,7 +919,7 @@ function getCrowdVisitorId(req, res) {
 
 app.get('/api/crowd-ideas/remaining', (req, res) => {
   const visitorId = getCrowdVisitorId(req, res)
-  const count = db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas WHERE visitor_id = ?`).get(visitorId).n
+  const count = getVisitorSubmissionCount(visitorId)
   res.json({ remaining: Math.max(0, CROWD_IDEA_LIMIT - count), limit: CROWD_IDEA_LIMIT })
 })
 
@@ -929,7 +942,7 @@ app.post('/api/crowd-ideas', (req, res) => {
   }
 
   const visitorId = getCrowdVisitorId(req, res)
-  const count = db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas WHERE visitor_id = ?`).get(visitorId).n
+  const count = getVisitorSubmissionCount(visitorId)
   if (count >= CROWD_IDEA_LIMIT) {
     return res.status(429).json({ error: `You've already submitted the maximum of ${CROWD_IDEA_LIMIT} ideas.` })
   }
@@ -954,6 +967,26 @@ app.post('/api/crowd-ideas', (req, res) => {
 
 app.get('/api/crowd-ideas/printer-status', (req, res) => {
   res.json({ connected: isPrinterConnected() })
+})
+
+app.get('/api/admin/crowd-ideas', requireAuth, (req, res) => {
+  const rows = db.prepare(`SELECT * FROM crowd_ideas ORDER BY id DESC`).all()
+  const { crowd_ideas_reset_at: resetAt } = db.prepare(`SELECT crowd_ideas_reset_at FROM settings WHERE id = 1`).get()
+  res.json({ submissions: rows, resetAt })
+})
+
+app.delete('/api/admin/crowd-ideas/:id', requireAuth, (req, res) => {
+  db.prepare(`DELETE FROM crowd_ideas WHERE id = ?`).run(req.params.id)
+  res.status(204).end()
+})
+
+// Doesn't delete anything — moves the reset watermark forward so every
+// visitor's submission count (checked against it in
+// getVisitorSubmissionCount) effectively goes back to 0, letting everyone
+// submit up to the limit again.
+app.post('/api/admin/crowd-ideas/reset', requireAuth, (req, res) => {
+  db.prepare(`UPDATE settings SET crowd_ideas_reset_at = datetime('now') WHERE id = 1`).run()
+  res.json({ resetAt: db.prepare(`SELECT crowd_ideas_reset_at FROM settings WHERE id = 1`).get().crowd_ideas_reset_at })
 })
 
 app.get('/api/admin/crowd-ideas/blocklist', requireAuth, (req, res) => {

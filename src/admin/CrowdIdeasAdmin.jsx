@@ -8,6 +8,9 @@ export default function CrowdIdeasAdmin() {
   const [adding, setAdding] = useState(false)
   const [steps, setSteps] = useState(null)
   const [savedSteps, setSavedSteps] = useState({})
+  const [submissions, setSubmissions] = useState(null)
+  const [resetAt, setResetAt] = useState(null)
+  const [resetting, setResetting] = useState(false)
 
   useEffect(() => {
     api.getCrowdIdeasBlocklist().then(setWords)
@@ -15,7 +18,41 @@ export default function CrowdIdeasAdmin() {
       setSteps(rows)
       setSavedSteps(Object.fromEntries(rows.map((r) => [r.id, r])))
     })
+    api.getAdminCrowdIdeas().then(({ submissions, resetAt }) => {
+      setSubmissions(submissions)
+      setResetAt(resetAt)
+    })
   }, [])
+
+  const handleDeleteSubmission = async (id) => {
+    setError('')
+    try {
+      await api.deleteAdminCrowdIdea(id)
+      setSubmissions((prev) => prev.filter((s) => s.id !== id))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const handleReset = async () => {
+    if (
+      !window.confirm(
+        "Reset submission totals for everyone? Nobody's data is deleted — this just lets every device submit up to 5 more ideas."
+      )
+    ) {
+      return
+    }
+    setResetting(true)
+    setError('')
+    try {
+      const { resetAt } = await api.resetCrowdIdeasSubmissions()
+      setResetAt(resetAt)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setResetting(false)
+    }
+  }
 
   const handleAdd = async (e) => {
     e.preventDefault()
@@ -83,7 +120,67 @@ export default function CrowdIdeasAdmin() {
         </div>
       )}
 
-      <h2 className="admin-section-title" style={{ marginTop: 8 }}>
+      <div className="admin-card">
+        <h2 className="admin-section-title">Submission limit</h2>
+        <p className="admin-muted">
+          Each device gets 5 submissions. Resetting doesn't delete anything — it just lets
+          everyone submit up to 5 more.
+        </p>
+        {resetAt && (
+          <p className="admin-muted" style={{ fontSize: 12 }}>
+            Last reset: {new Date(`${resetAt.replace(' ', 'T')}Z`).toLocaleString('en-GB')}
+          </p>
+        )}
+        <button className="admin-btn admin-btn-primary" onClick={handleReset} disabled={resetting}>
+          {resetting ? 'Resetting…' : 'Reset all submission totals'}
+        </button>
+      </div>
+
+      <h2 className="admin-section-title" style={{ marginTop: 40 }}>
+        Submissions
+      </h2>
+      <p className="admin-muted">Everything anyone has ever submitted, with its print status.</p>
+
+      {!submissions ? (
+        <div className="admin-muted" style={{ marginTop: 20 }}>
+          Loading…
+        </div>
+      ) : (
+        <div className="admin-card" style={{ marginTop: 20 }}>
+          <h3 className="admin-section-title">
+            {submissions.length} submission{submissions.length === 1 ? '' : 's'}
+          </h3>
+          {submissions.length === 0 ? (
+            <p className="admin-muted">No submissions yet.</p>
+          ) : (
+            <div className="crowd-submissions-list">
+              {submissions.map((s) => (
+                <div className="crowd-submission-row" key={s.id}>
+                  <span
+                    className={`crowd-submission-dot ${s.printed ? 'ok' : 'fail'}`}
+                    title={s.printed ? 'Printed' : 'Print failed'}
+                  />
+                  <span className="crowd-submission-name">{s.name}</span>
+                  <span className="crowd-submission-idea">{s.idea}</span>
+                  <span className="crowd-submission-time">
+                    {new Date(`${s.created_at.replace(' ', 'T')}Z`).toLocaleString('en-GB')}
+                  </span>
+                  <button
+                    type="button"
+                    className="crowd-submission-delete"
+                    onClick={() => handleDeleteSubmission(s.id)}
+                    aria-label={`Delete submission from ${s.name}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <h2 className="admin-section-title" style={{ marginTop: 40 }}>
         How It Works page
       </h2>
       <p className="admin-muted">

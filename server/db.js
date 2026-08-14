@@ -58,6 +58,7 @@ db.exec(`
     font_family TEXT,
     favicon_url TEXT,
     hero_bg_url TEXT,
+    crowd_ideas_reset_at TEXT,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -132,6 +133,12 @@ db.exec(`
 const projectColumns = db.prepare(`PRAGMA table_info(projects)`).all()
 if (!projectColumns.some((c) => c.name === 'visible')) {
   db.exec(`ALTER TABLE projects ADD COLUMN visible INTEGER NOT NULL DEFAULT 1`)
+}
+
+// Migration: `crowd_ideas_reset_at` was added after the initial schema.
+const settingsColumns = db.prepare(`PRAGMA table_info(settings)`).all()
+if (!settingsColumns.some((c) => c.name === 'crowd_ideas_reset_at')) {
+  db.exec(`ALTER TABLE settings ADD COLUMN crowd_ideas_reset_at TEXT`)
 }
 
 // Bootstrap the single settings row so callers can always UPDATE it.

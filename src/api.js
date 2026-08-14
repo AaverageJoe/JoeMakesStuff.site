@@ -70,6 +70,10 @@ export const api = {
     request('/crowd-ideas', { method: 'POST', body: JSON.stringify({ name, idea }) }),
   getCrowdIdeasPrinterStatus: () => request('/crowd-ideas/printer-status'),
 
+  getAdminCrowdIdeas: () => request('/admin/crowd-ideas'),
+  deleteAdminCrowdIdea: (id) => request(`/admin/crowd-ideas/${id}`, { method: 'DELETE' }),
+  resetCrowdIdeasSubmissions: () => request('/admin/crowd-ideas/reset', { method: 'POST' }),
+
   getCrowdIdeasBlocklist: () => request('/admin/crowd-ideas/blocklist'),
   addCrowdIdeasBlockedWord: (word) =>
     request('/admin/crowd-ideas/blocklist', { method: 'POST', body: JSON.stringify({ word }) }),
