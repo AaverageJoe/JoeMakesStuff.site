@@ -7,6 +7,7 @@ import sharp from 'sharp'
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
+import { execFile } from 'child_process'
 import { fileURLToPath } from 'url'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
@@ -974,6 +975,28 @@ app.post('/api/admin/crowd-ideas/blocklist', requireAuth, (req, res) => {
 app.delete('/api/admin/crowd-ideas/blocklist/:id', requireAuth, (req, res) => {
   db.prepare(`DELETE FROM crowd_ideas_blocklist WHERE id = ?`).run(req.params.id)
   res.status(204).end()
+})
+
+// ---------- Kiosk control ----------
+// Lets the rack touchscreen's own dashboard exit its fullscreen kiosk
+// Chromium so the Pi's desktop underneath is usable. Deliberately gated on
+// the Host header, not just app auth — the dashboard is also reachable
+// remotely (joemakesstuff.uk, LAN IP), and a remote viewer shouldn't be able
+// to blank the physical screen. Only a request that arrives with
+// Host: localhost — i.e. the kiosk browser hitting the app directly,
+// bypassing Caddy — is honoured.
+app.post('/api/kiosk/hide', (req, res) => {
+  const host = (req.headers.host || '').split(':')[0]
+  if (host !== 'localhost' && host !== '127.0.0.1') {
+    return res.status(403).json({ error: 'Only available on the Pi itself' })
+  }
+  // Kill the lwrespawn supervisor first, then the browser itself — killing
+  // just the browser would have lwrespawn immediately relaunch it.
+  execFile('pkill', ['-f', 'lwrespawn.*chromium.*localhost:4000/dashboard'], () => {
+    execFile('pkill', ['-f', 'chromium.*localhost:4000/dashboard'], () => {
+      res.status(204).end()
+    })
+  })
 })
 
 // ---------- SEO: sitemap ----------

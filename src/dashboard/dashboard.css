@@ -58,8 +58,31 @@ body {
   color: var(--accent);
 }
 
+.dashboard-header-right {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(10px, 1.6vw, 20px);
+}
+
 .dashboard-clock {
   text-align: right;
+}
+
+.dashboard-hide-btn {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: clamp(11px, 1.1vw, 13px);
+  padding: clamp(6px, 0.8vw, 10px) clamp(12px, 1.4vw, 18px);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dashboard-hide-btn:hover,
+.dashboard-hide-btn:active {
+  border-color: var(--text-dim);
+  color: var(--text);
 }
 
 .dashboard-time {

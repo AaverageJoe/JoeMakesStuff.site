@@ -63,6 +63,7 @@ export const api = {
   getDashboardStats: () => request('/stats/dashboard'),
   getDashboardCrowdIdeas: () => request('/stats/dashboard/crowd-ideas'),
   deleteDashboardCrowdIdea: (id) => request(`/stats/dashboard/crowd-ideas/${id}`, { method: 'DELETE' }),
+  hideKiosk: () => request('/kiosk/hide', { method: 'POST' }),
 
   getCrowdIdeasRemaining: () => request('/crowd-ideas/remaining'),
   submitCrowdIdea: (name, idea) =>

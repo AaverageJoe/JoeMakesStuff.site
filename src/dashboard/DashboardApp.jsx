@@ -220,6 +220,7 @@ export default function DashboardApp() {
   }, [])
 
   const last7Days = buildFullWeek(stats?.last7Days)
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
   return (
     <div className="dashboard">
@@ -227,11 +228,18 @@ export default function DashboardApp() {
         <div className="dashboard-logo">
           Joe<span className="dashboard-logo-dot">.</span>MakesStuff
         </div>
-        <div className="dashboard-clock">
-          <div className="dashboard-time">{now.toLocaleTimeString('en-GB')}</div>
-          <div className="dashboard-date">
-            {now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+        <div className="dashboard-header-right">
+          <div className="dashboard-clock">
+            <div className="dashboard-time">{now.toLocaleTimeString('en-GB')}</div>
+            <div className="dashboard-date">
+              {now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </div>
           </div>
+          {isLocal && (
+            <button type="button" className="dashboard-hide-btn" onClick={() => api.hideKiosk()}>
+              Hide
+            </button>
+          )}
         </div>
       </header>
 
