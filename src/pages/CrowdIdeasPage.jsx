@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { useInView } from '../useInView'
 
 const NAME_MAX = 30
 const IDEA_MAX = 100
@@ -16,6 +17,23 @@ function PrinterStatus({ connected }) {
   )
 }
 
+function HowtoRow({ step, index }) {
+  const [ref, inView] = useInView({ threshold: 0.25 })
+
+  return (
+    <div className={`howto-row ${index % 2 ? 'reverse' : ''} reveal ${inView ? 'in-view' : ''}`} ref={ref}>
+      <div className="howto-media">
+        {step.image_url && <img src={step.image_url} alt={step.title} loading="lazy" />}
+      </div>
+      <div className="howto-text">
+        <div className="howto-index">0{index + 1}</div>
+        <h3>{step.title}</h3>
+        <p>{step.description}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function CrowdIdeasPage() {
   const [name, setName] = useState('')
   const [idea, setIdea] = useState('')
@@ -23,6 +41,11 @@ export default function CrowdIdeasPage() {
   const [status, setStatus] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [printerConnected, setPrinterConnected] = useState(null)
+  const [steps, setSteps] = useState([])
+
+  useEffect(() => {
+    api.getCrowdHowtoSteps().then(setSteps)
+  }, [])
 
   useEffect(() => {
     api
@@ -74,64 +97,84 @@ export default function CrowdIdeasPage() {
   const outOfSubmissions = remaining === 0
 
   return (
-    <section id="crowd-ideas">
-      <div className="container crowd-ideas-container">
-        <div className="section-head">
-          <div className="eyebrow">Got An Idea?</div>
-          <h2>Crowd Sourcing Ideas</h2>
-          <p>Drop your name and an idea below — it'll print out on the spot.</p>
+    <>
+      <section id="crowd-ideas-howto">
+        <div className="container">
+          <div className="section-head">
+            <div className="eyebrow">Got An Idea?</div>
+            <h2>Crowd Sourcing Ideas</h2>
+            <p>Here's how it works — then try it for yourself just below.</p>
+          </div>
+
+          {steps.map((step, i) => (
+            <HowtoRow step={step} index={i} key={step.id} />
+          ))}
         </div>
+      </section>
 
-        <PrinterStatus connected={printerConnected} />
+      <section id="crowd-ideas-form">
+        <div className="container crowd-ideas-container">
+          <PrinterStatus connected={printerConnected} />
 
-        {outOfSubmissions ? (
-          <p className="crowd-ideas-status crowd-ideas-status-info">
-            You've used all {LIMIT} of your submissions on this device — thanks for taking part!
-          </p>
-        ) : (
-          <form className="crowd-ideas-form" onSubmit={handleSubmit}>
-            <label>
-              Name
-              <input
-                type="text"
-                value={name}
-                maxLength={NAME_MAX}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-              <span className="crowd-ideas-count">
-                {name.length}/{NAME_MAX}
-              </span>
-            </label>
+          {outOfSubmissions ? (
+            <p className="crowd-ideas-status crowd-ideas-status-info">
+              You've used all {LIMIT} of your submissions on this device — thanks for taking part!
+            </p>
+          ) : (
+            <div className="crowd-ideas-receipt">
+              <div className="crowd-ideas-receipt-edge" />
+              <div className="crowd-ideas-receipt-paper">
+                <div className="crowd-ideas-receipt-heading">* YOUR IDEA *</div>
 
-            <label>
-              Your idea
-              <textarea
-                value={idea}
-                maxLength={IDEA_MAX}
-                rows={4}
-                onChange={(e) => setIdea(e.target.value)}
-                required
-              />
-              <span className="crowd-ideas-count">
-                {idea.length}/{IDEA_MAX}
-              </span>
-            </label>
+                <form className="crowd-ideas-form" onSubmit={handleSubmit}>
+                  <label>
+                    Name
+                    <input
+                      type="text"
+                      value={name}
+                      maxLength={NAME_MAX}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                    <span className="crowd-ideas-count">
+                      {name.length}/{NAME_MAX}
+                    </span>
+                  </label>
 
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? 'Printing…' : 'Submit idea'}
-            </button>
+                  <label>
+                    Your idea
+                    <textarea
+                      value={idea}
+                      maxLength={IDEA_MAX}
+                      rows={4}
+                      onChange={(e) => setIdea(e.target.value)}
+                      required
+                    />
+                    <span className="crowd-ideas-count">
+                      {idea.length}/{IDEA_MAX}
+                    </span>
+                  </label>
 
-            {remaining !== null && (
-              <p className="crowd-ideas-remaining">
-                {remaining} submission{remaining === 1 ? '' : 's'} left on this device
-              </p>
-            )}
-          </form>
-        )}
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>
+                    {submitting ? 'Printing…' : 'Submit idea'}
+                  </button>
 
-        {status && <p className={`crowd-ideas-status crowd-ideas-status-${status.type}`}>{status.message}</p>}
-      </div>
-    </section>
+                  {remaining !== null && (
+                    <p className="crowd-ideas-remaining">
+                      {remaining} submission{remaining === 1 ? '' : 's'} left on this device
+                    </p>
+                  )}
+                </form>
+
+                {status && (
+                  <p className={`crowd-ideas-status crowd-ideas-status-${status.type}`}>{status.message}</p>
+                )}
+              </div>
+              <div className="crowd-ideas-receipt-edge bottom" />
+            </div>
+          )}
+        </div>
+      </section>
+    </>
   )
 }

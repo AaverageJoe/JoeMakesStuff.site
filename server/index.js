@@ -977,6 +977,64 @@ app.delete('/api/admin/crowd-ideas/blocklist/:id', requireAuth, (req, res) => {
   res.status(204).end()
 })
 
+// "How it works" steps shown on the public crowd-ideas page — same
+// title/description/image shape and edit pattern as services.
+app.get('/api/crowd-howto-steps', (req, res) => {
+  res.json(db.prepare(`SELECT * FROM crowd_howto_steps ORDER BY position ASC, id ASC`).all())
+})
+
+app.put('/api/crowd-howto-steps/:id', requireAuth, (req, res) => {
+  const { id } = req.params
+  const existing = db.prepare(`SELECT id FROM crowd_howto_steps WHERE id = ?`).get(id)
+  if (!existing) return res.status(404).json({ error: 'Not found' })
+
+  const fields = ['title', 'description']
+  const updates = []
+  const values = []
+  for (const field of fields) {
+    if (field in (req.body || {})) {
+      updates.push(`${field} = ?`)
+      values.push(req.body[field])
+    }
+  }
+  if (updates.length === 0) return res.status(400).json({ error: 'No editable fields provided' })
+  values.push(id)
+
+  db.prepare(`UPDATE crowd_howto_steps SET ${updates.join(', ')} WHERE id = ?`).run(...values)
+  res.json(db.prepare(`SELECT * FROM crowd_howto_steps WHERE id = ?`).get(id))
+})
+
+const howtoStepImageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, _file, cb) => {
+      const dir = path.join(UPLOADS_DIR, 'crowd-howto')
+      fs.mkdirSync(dir, { recursive: true })
+      cb(null, dir)
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname) || ''
+      cb(null, `${req.params.id}-${Date.now()}${ext}`)
+    },
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+})
+
+app.post(
+  '/api/crowd-howto-steps/:id/upload',
+  requireAuth,
+  howtoStepImageUpload.single('file'),
+  (req, res) => {
+    const { id } = req.params
+    const existing = db.prepare(`SELECT id FROM crowd_howto_steps WHERE id = ?`).get(id)
+    if (!existing) return res.status(404).json({ error: 'Not found' })
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
+
+    const url = `/uploads/crowd-howto/${req.file.filename}`
+    db.prepare(`UPDATE crowd_howto_steps SET image_url = ? WHERE id = ?`).run(url, id)
+    res.json({ url })
+  }
+)
+
 // ---------- Kiosk control ----------
 // Lets the rack touchscreen's own dashboard exit its fullscreen kiosk
 // Chromium so the Pi's desktop underneath is usable. Deliberately gated on

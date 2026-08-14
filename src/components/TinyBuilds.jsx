@@ -54,7 +54,8 @@ export default function TinyBuilds() {
             </div>
           </div>
 
-          <Link to="/crowd-ideas" className="btn btn-ghost crowd-ideas-btn">
+          <Link to="/crowd-ideas" className="btn btn-primary crowd-ideas-btn">
+            <span className="crowd-ideas-btn-tag">Send me ideas</span>
             Crowd Sourcing Ideas
           </Link>
         </div>

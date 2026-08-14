@@ -130,8 +130,27 @@ section {
   flex-wrap: wrap;
 }
 
-.crowd-ideas-btn {
+.btn.crowd-ideas-btn {
   flex-shrink: 0;
+  position: relative;
+  margin-top: 14px;
+  padding: 18px 34px;
+  font-size: 16px;
+}
+
+.crowd-ideas-btn-tag {
+  position: absolute;
+  top: -14px;
+  right: 14px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 /* ---------- Crowd Sourcing Ideas ---------- */
@@ -224,6 +243,83 @@ section {
 
 .crowd-ideas-status-info {
   color: var(--text-dim);
+}
+
+/* Receipt-paper styling for the actual submission form, evoking the
+   physical thermal printout it produces. */
+.crowd-ideas-receipt {
+  --receipt-paper: #f4f1e6;
+  --receipt-text: #2a2620;
+  --receipt-line: #b5ae99;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.crowd-ideas-receipt-edge {
+  height: 16px;
+  background: linear-gradient(-45deg, var(--receipt-paper) 8px, transparent 0) 0 8px,
+    linear-gradient(45deg, var(--receipt-paper) 8px, transparent 0) 0 8px;
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: 16px 16px;
+}
+
+.crowd-ideas-receipt-edge.bottom {
+  transform: scaleY(-1);
+}
+
+.crowd-ideas-receipt-paper {
+  background: var(--receipt-paper);
+  color: var(--receipt-text);
+  padding: 28px 24px 20px;
+  font-family: 'Courier New', Courier, monospace;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.crowd-ideas-receipt-heading {
+  text-align: center;
+  letter-spacing: 0.15em;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--receipt-line);
+}
+
+.crowd-ideas-receipt-paper .crowd-ideas-form label {
+  color: #6b6455;
+}
+
+.crowd-ideas-receipt-paper .crowd-ideas-form input,
+.crowd-ideas-receipt-paper .crowd-ideas-form textarea {
+  font-family: 'Courier New', Courier, monospace;
+  background: #fff;
+  border: 1px dashed var(--receipt-line);
+  border-radius: 0;
+  color: var(--receipt-text);
+}
+
+.crowd-ideas-receipt-paper .crowd-ideas-form input:focus,
+.crowd-ideas-receipt-paper .crowd-ideas-form textarea:focus {
+  border-color: var(--receipt-text);
+}
+
+.crowd-ideas-receipt-paper .crowd-ideas-count,
+.crowd-ideas-receipt-paper .crowd-ideas-remaining {
+  color: #8a836f;
+}
+
+.crowd-ideas-receipt-paper .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.crowd-ideas-receipt-paper .crowd-ideas-status {
+  font-family: 'Courier New', Courier, monospace;
+  text-align: center;
+  padding-top: 14px;
+  margin-top: 16px;
+  border-top: 1px dashed var(--receipt-line);
 }
 
 /* ---------- Header ---------- */
@@ -1368,6 +1464,59 @@ section {
   font-size: 26px;
 }
 
+/* ---------- Crowd Ideas: How It Works (same layout as Services) ---------- */
+.howto-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  padding: 48px 0;
+  border-top: 1px solid var(--border);
+}
+
+.howto-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.howto-row.reverse {
+  direction: rtl;
+}
+
+.howto-row.reverse > * {
+  direction: ltr;
+}
+
+.howto-row.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.howto-row.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.howto-media img {
+  border: 1px solid var(--border);
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.howto-index {
+  font-family: var(--font-display);
+  color: var(--accent);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+
+.howto-text h3 {
+  font-size: 26px;
+}
+
 /* ---------- About ---------- */
 .about-grid {
   display: grid;
@@ -1531,6 +1680,8 @@ section {
   .about-grid,
   .service-row,
   .service-row.reverse,
+  .howto-row,
+  .howto-row.reverse,
   .skills-grid {
     grid-template-columns: 1fr;
   }
@@ -1539,7 +1690,8 @@ section {
     gap: 32px;
   }
 
-  .service-row.reverse {
+  .service-row.reverse,
+  .howto-row.reverse {
     direction: ltr;
   }
 

@@ -75,6 +75,11 @@ export const api = {
     request('/admin/crowd-ideas/blocklist', { method: 'POST', body: JSON.stringify({ word }) }),
   deleteCrowdIdeasBlockedWord: (id) => request(`/admin/crowd-ideas/blocklist/${id}`, { method: 'DELETE' }),
 
+  getCrowdHowtoSteps: () => request('/crowd-howto-steps'),
+  updateCrowdHowtoStep: (id, fields) =>
+    request(`/crowd-howto-steps/${id}`, { method: 'PUT', body: JSON.stringify(fields) }),
+  uploadCrowdHowtoStepImage: (id, file) => uploadFile(`/crowd-howto-steps/${id}/upload`, file),
+
   login: (username, password) =>
     request('/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => request('/logout', { method: 'POST' }),

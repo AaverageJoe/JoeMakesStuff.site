@@ -117,6 +117,14 @@ db.exec(`
     word TEXT NOT NULL UNIQUE,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS crowd_howto_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    image_url TEXT,
+    position INTEGER NOT NULL DEFAULT 0
+  );
 `)
 
 // Migration: `visible` was added after the initial schema — existing
@@ -193,4 +201,31 @@ if (blocklistCount.n === 0) {
   ]
   const insertWord = db.prepare(`INSERT OR IGNORE INTO crowd_ideas_blocklist (word) VALUES (?)`)
   defaults.forEach((w) => insertWord.run(w))
+}
+
+// Seed the Crowd Sourcing Ideas "how it works" steps — copy is ready, photos
+// get added from /admin once real ones are taken.
+const howtoStepCount = db.prepare(`SELECT COUNT(*) AS n FROM crowd_howto_steps`).get()
+if (howtoStepCount.n === 0) {
+  const defaults = [
+    {
+      title: 'Fill it in',
+      description:
+        "Pop your name and your idea into the form at the bottom of this page — name's capped at 30 characters, idea at 100, so keep it snappy.",
+    },
+    {
+      title: "It's printing",
+      description:
+        'The second you hit submit, it starts printing out on the thermal printer on the rack, right there in the room.',
+    },
+    {
+      title: 'Torn off and saved',
+      description:
+        "Your idea gets torn off the roll and kept, and it's saved digitally too — you can submit up to 5 ideas per device.",
+    },
+  ]
+  const insertStep = db.prepare(
+    `INSERT INTO crowd_howto_steps (title, description, position) VALUES (?, ?, ?)`
+  )
+  defaults.forEach((s, i) => insertStep.run(s.title, s.description, i))
 }
