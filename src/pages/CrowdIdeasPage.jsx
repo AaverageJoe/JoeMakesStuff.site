@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { api } from '../api'
+import { useCopy } from '../copy'
 import { useInView } from '../useInView'
 
 const NAME_MAX = 30
@@ -34,6 +35,26 @@ function HowtoRow({ step, index }) {
   )
 }
 
+// A hand-drawn curved arrow that draws itself in on scroll, same technique
+// as the self-drawing "Joe." mark: pathLength="1" normalizes the path so a
+// plain stroke-dashoffset 1 -> 0 transition draws it regardless of geometry.
+function DrawnArrow({ flip }) {
+  const [ref, inView] = useInView({ threshold: 0.6 })
+
+  return (
+    <div className={`howto-arrow ${flip ? 'flip' : ''}`} ref={ref}>
+      <svg className="howto-arrow-svg" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path
+          className={`howto-arrow-path ${inView ? 'in-view' : ''}`}
+          d="M165,15 C130,10 70,35 45,80 C30,108 30,125 42,138 M42,138 L18,120 M42,138 L62,152"
+          pathLength="1"
+          fill="none"
+        />
+      </svg>
+    </div>
+  )
+}
+
 export default function CrowdIdeasPage() {
   const [name, setName] = useState('')
   const [idea, setIdea] = useState('')
@@ -42,6 +63,7 @@ export default function CrowdIdeasPage() {
   const [submitting, setSubmitting] = useState(false)
   const [printerConnected, setPrinterConnected] = useState(null)
   const [steps, setSteps] = useState([])
+  const { copy } = useCopy()
 
   useEffect(() => {
     api.getCrowdHowtoSteps().then(setSteps)
@@ -101,13 +123,16 @@ export default function CrowdIdeasPage() {
       <section id="crowd-ideas-howto">
         <div className="container">
           <div className="section-head">
-            <div className="eyebrow">Got An Idea?</div>
-            <h2>Crowd Sourcing Ideas</h2>
-            <p>Here's how it works — then try it for yourself just below.</p>
+            <div className="eyebrow">{copy.crowd_ideas_eyebrow}</div>
+            <h2>{copy.crowd_ideas_heading}</h2>
+            <p>{copy.crowd_ideas_intro}</p>
           </div>
 
           {steps.map((step, i) => (
-            <HowtoRow step={step} index={i} key={step.id} />
+            <Fragment key={step.id}>
+              <HowtoRow step={step} index={i} />
+              {i < steps.length - 1 && <DrawnArrow flip={i % 2 === 1} />}
+            </Fragment>
           ))}
         </div>
       </section>

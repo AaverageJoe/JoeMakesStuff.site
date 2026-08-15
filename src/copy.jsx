@@ -27,6 +27,10 @@ export const COPY_DEFAULTS = {
   services_eyebrow: 'What I Do',
   services_heading: 'Creative Technology Services',
 
+  crowd_ideas_eyebrow: 'Got An Idea?',
+  crowd_ideas_heading: 'Crowd Sourcing Ideas',
+  crowd_ideas_intro: "Here's how it works — then try it for yourself just below.",
+
   about_eyebrow: 'About',
   about_heading: 'Joe Allison',
   about_title: 'Principal Creative Technologist',
@@ -79,6 +83,14 @@ export const COPY_GROUPS = [
     fields: [
       { key: 'services_eyebrow', label: 'Eyebrow' },
       { key: 'services_heading', label: 'Heading' },
+    ],
+  },
+  {
+    label: 'Crowd Sourcing Ideas',
+    fields: [
+      { key: 'crowd_ideas_eyebrow', label: 'Eyebrow' },
+      { key: 'crowd_ideas_heading', label: 'Heading' },
+      { key: 'crowd_ideas_intro', label: 'Intro paragraph', multiline: true },
     ],
   },
   {
