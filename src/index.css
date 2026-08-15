@@ -255,6 +255,37 @@ section {
   margin: 0 auto;
 }
 
+/* Plays once on submit — the slip feeds up and away as if being pulled
+   into the printer, then a fresh blank one drops back into place. */
+@keyframes crowdIdeasPrintOut {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  45% {
+    transform: translateY(-70px) scale(0.9);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(50px) scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.crowd-ideas-receipt.printing {
+  animation: crowdIdeasPrintOut 0.7s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crowd-ideas-receipt.printing {
+    animation: none;
+  }
+}
+
 .crowd-ideas-receipt-edge {
   height: 16px;
   background: linear-gradient(-45deg, var(--receipt-paper) 8px, transparent 0) 0 8px,

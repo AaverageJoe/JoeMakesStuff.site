@@ -803,7 +803,7 @@ app.delete('/api/stats/dashboard/crowd-ideas/:id', (req, res) => {
 
 // ---------- Crowd Sourcing Ideas ----------
 const CROWD_IDEA_NAME_MAX = 30
-const CROWD_IDEA_TEXT_MAX = 100
+const CROWD_IDEA_TEXT_MAX = 142
 const CROWD_IDEA_LIMIT = 5
 const CROWD_VISITOR_COOKIE = 'cs_visitor'
 

@@ -218,7 +218,7 @@ if (howtoStepCount.n === 0) {
     {
       title: 'Fill it in',
       description:
-        "Pop your name and your idea into the form at the bottom of this page — name's capped at 30 characters, idea at 100, so keep it snappy.",
+        "Pop your name and your idea into the form at the bottom of this page — name's capped at 30 characters, idea at 142, so keep it snappy.",
     },
     {
       title: "It's printing",

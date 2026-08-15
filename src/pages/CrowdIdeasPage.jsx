@@ -4,7 +4,7 @@ import { useCopy } from '../copy'
 import { useInView } from '../useInView'
 
 const NAME_MAX = 30
-const IDEA_MAX = 100
+const IDEA_MAX = 142
 const LIMIT = 5
 const PRINTER_POLL_MS = 20000
 
@@ -63,6 +63,7 @@ export default function CrowdIdeasPage() {
   const [submitting, setSubmitting] = useState(false)
   const [printerConnected, setPrinterConnected] = useState(null)
   const [steps, setSteps] = useState([])
+  const [printing, setPrinting] = useState(false)
   const { copy } = useCopy()
 
   useEffect(() => {
@@ -107,8 +108,15 @@ export default function CrowdIdeasPage() {
           ? 'Printed! Thanks for the idea.'
           : "Saved — the printer didn't respond, but your idea's in.",
       })
-      setName('')
+      // Name stays — makes it easy to fire off several ideas in a row
+      // without retyping it each time. Only the idea itself clears.
       setIdea('')
+      setPrinting(true)
+      // Belt-and-braces: onAnimationEnd on the receipt clears this normally,
+      // but this fallback guarantees the form never gets stuck mid-animation
+      // if that event is ever missed (tab backgrounded, animation
+      // interrupted, etc).
+      setTimeout(() => setPrinting(false), 800)
     } catch (err) {
       setStatus({ type: 'error', message: err.message })
     } finally {
@@ -146,7 +154,10 @@ export default function CrowdIdeasPage() {
               You've used all {LIMIT} of your submissions on this device — thanks for taking part!
             </p>
           ) : (
-            <div className="crowd-ideas-receipt">
+            <div
+              className={`crowd-ideas-receipt ${printing ? 'printing' : ''}`}
+              onAnimationEnd={() => setPrinting(false)}
+            >
               <div className="crowd-ideas-receipt-edge" />
               <div className="crowd-ideas-receipt-paper">
                 <div className="crowd-ideas-receipt-heading">* YOUR IDEA *</div>
