@@ -46,7 +46,7 @@ function DrawnArrow({ flip }) {
       <svg className="howto-arrow-svg" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path
           className={`howto-arrow-path ${inView ? 'in-view' : ''}`}
-          d="M165,15 C130,10 70,35 45,80 C30,108 30,125 42,138 M42,138 L18,120 M42,138 L62,152"
+          d="M170,10 C120,15 60,50 50,130 M50,130 L42,109 M50,130 L63,112"
           pathLength="1"
           fill="none"
         />
