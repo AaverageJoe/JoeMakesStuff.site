@@ -41,7 +41,14 @@ function wrapText(text, width = LINE_WIDTH) {
 // so consecutive submissions on the same roll are easy to tell apart.
 export function printCrowdIdea({ name, idea }) {
   const rule = '-'.repeat(LINE_WIDTH)
-  const lines = [rule, `From: ${toPrintableAscii(name)}`, '', ...wrapText(idea), '', rule, '', '']
+  let lines = [rule, `From: ${toPrintableAscii(name)}`, '', ...wrapText(idea), '', rule, '', '']
+  // ESC { 1 (below) doesn't just rotate characters — it also prints lines in
+  // reverse order, so the physical output reads correctly on a printer
+  // mounted upside down. Left uncorrected, that meant "From: name" (sent
+  // first) came out at the bottom instead of the top. Pre-reversing here
+  // cancels that out so the printout reads top-to-bottom exactly like the
+  // form: name, then idea.
+  if (UPSIDE_DOWN) lines = [...lines].reverse()
   const parts = [ESC_INIT]
   if (UPSIDE_DOWN) parts.push(ESC_UPSIDE_DOWN_ON)
   parts.push(Buffer.from(lines.join('\n') + '\n', 'ascii'))
