@@ -207,11 +207,22 @@ if (!sessionSecret) {
 
 // One-way hash of the visitor's IP, salted with the server's own session
 // secret — lets us count unique visitors without ever storing a raw IP.
+// Prefers CF-Connecting-IP (set by Cloudflare's edge for tunnelled traffic —
+// tamper-proof, since Cloudflare strips any client-supplied copy of this
+// header before setting its own) and falls back to req.ip for LAN-only
+// access that never touches Cloudflare.
 function hashVisitor(req) {
-  return crypto.createHash('sha256').update(`${req.ip}:${sessionSecret}`).digest('hex').slice(0, 16)
+  const ip = req.headers['cf-connecting-ip'] || req.ip
+  return crypto.createHash('sha256').update(`${ip}:${sessionSecret}`).digest('hex').slice(0, 16)
 }
 
 const app = express()
+// Caddy is the only thing that ever connects to this app directly (it's not
+// exposed outside localhost) — trusting loopback lets Express read the real
+// client IP out of X-Forwarded-For instead of seeing every request as
+// 127.0.0.1. Without this, every visitor collapses into ~1-2 "unique"
+// visitors regardless of who's actually browsing.
+app.set('trust proxy', 'loopback')
 const PORT = process.env.PORT || 4000
 const SERVER_STARTED_AT = Date.now()
 
