@@ -14,7 +14,7 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { db } from './db.js'
 import { verifyLogin, requireAuth, getAdmin, setPassword } from './auth.js'
 import { FONT_KEYS } from '../src/fonts.js'
-import { buildMeta, injectSeo, generateSitemap } from './seo.js'
+import { buildMeta, injectSeo, generateSitemap, SITE_URL } from './seo.js'
 import { printCrowdIdea, isPrinterConnected } from './printer.js'
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
@@ -1101,9 +1101,17 @@ app.post('/api/kiosk/hide', (req, res) => {
   })
 })
 
-// ---------- SEO: sitemap ----------
+// ---------- SEO: sitemap & robots ----------
 app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml').send(generateSitemap())
+})
+
+// Dynamic so it always points at the sitemap on whatever domain it's
+// actually served from, instead of a stale hardcoded one.
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(
+    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\n\nSitemap: ${SITE_URL}/sitemap.xml\n`
+  )
 })
 
 // ---------- Static frontend (production) ----------

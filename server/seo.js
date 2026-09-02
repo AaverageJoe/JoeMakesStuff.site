@@ -78,16 +78,23 @@ export function buildMeta(reqPath) {
       title: `Contact — ${SITE_NAME}`,
       description: 'Get in touch about a rapid prototyping, interactive exhibit, or R&D project.',
     },
+    '/crowd-ideas': {
+      title: `Crowd Sourcing Ideas — ${SITE_NAME}`,
+      description:
+        'Submit an idea in person and watch it print out on the spot — a live, crowd-sourced idea wall by creative technologist Joe Allison.',
+    },
   }
 
   const meta = pageMeta[reqPath] || pageMeta['/']
   const isHome = reqPath === '/'
+  const noindex = reqPath.startsWith('/admin') || reqPath.startsWith('/dashboard')
 
   return {
     title: meta.title,
     description: meta.description,
     image: DEFAULT_IMAGE,
     canonical,
+    noindex,
     jsonld: isHome
       ? {
           '@context': 'https://schema.org',
@@ -112,6 +119,10 @@ export function injectSeo(html, meta) {
     `<meta name="description" content="${escapeAttr(meta.description)}" />`
   )
   out = out.replace(/<link rel="canonical" href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${escapeAttr(meta.canonical)}" />`)
+  out = out.replace(
+    /<meta name="robots" content="[^"]*"\s*\/?>/,
+    `<meta name="robots" content="${meta.noindex ? 'noindex, nofollow' : 'index, follow'}" />`
+  )
 
   out = out.replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeAttr(meta.title)}" />`)
   out = out.replace(/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeAttr(meta.description)}" />`)
@@ -131,12 +142,19 @@ export function injectSeo(html, meta) {
 }
 
 export function generateSitemap() {
-  const projects = db.prepare(`SELECT slug FROM projects WHERE visible = 1`).all()
-  const staticPaths = ['/', '/tiny-builds', '/services', '/about', '/contact']
-  const paths = [...staticPaths, ...projects.map((p) => `/work/${p.slug}`)]
+  const projects = db.prepare(`SELECT slug, updated_at FROM projects WHERE visible = 1`).all()
+  const staticPaths = ['/', '/tiny-builds', '/services', '/about', '/contact', '/crowd-ideas']
+  const entries = [
+    ...staticPaths.map((p) => ({ path: p, lastmod: null })),
+    ...projects.map((p) => ({ path: `/work/${p.slug}`, lastmod: p.updated_at })),
+  ]
 
-  const urls = paths
-    .map((p) => `  <url><loc>${SITE_URL}${p === '/' ? '/' : p}</loc></url>`)
+  const urls = entries
+    .map(({ path: p, lastmod }) => {
+      const loc = `<loc>${SITE_URL}${p === '/' ? '/' : p}</loc>`
+      const lastmodTag = lastmod ? `<lastmod>${lastmod.slice(0, 10)}</lastmod>` : ''
+      return `  <url>${loc}${lastmodTag}</url>`
+    })
     .join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
