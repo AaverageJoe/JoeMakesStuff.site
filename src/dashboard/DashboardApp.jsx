@@ -167,6 +167,52 @@ function CrowdIdeasModal({ onClose }) {
   )
 }
 
+function RebootModal({ onClose }) {
+  const [rebooting, setRebooting] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleReboot = async () => {
+    setError('')
+    setRebooting(true)
+    try {
+      await api.rebootServer()
+      // No further state change on success — the Pi is going down, so the
+      // "Rebooting…" message just stays up until this page itself dies.
+    } catch {
+      setRebooting(false)
+      setError("Couldn't reach the server to reboot it.")
+    }
+  }
+
+  return (
+    <div className="debug-overlay" onClick={rebooting ? undefined : onClose}>
+      <div className="debug-panel reboot-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="debug-panel-header">
+          <h2>Reboot Server</h2>
+          {!rebooting && (
+            <button type="button" className="debug-close" onClick={onClose}>
+              Close
+            </button>
+          )}
+        </div>
+        <div className="reboot-panel-body">
+          {rebooting ? (
+            <p>Rebooting — the dashboard will come back on its own in a minute or two.</p>
+          ) : (
+            <>
+              <p>This restarts the Pi itself. The site and dashboard will be offline for about a minute.</p>
+              {error && <p className="reboot-panel-error">{error}</p>}
+              <button type="button" className="reboot-confirm-btn" onClick={handleReboot}>
+                Reboot Now
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function UsageChart({ days }) {
   const max = Math.max(1, ...days.map((d) => d.views))
   return (
@@ -192,6 +238,7 @@ export default function DashboardApp() {
   const [error, setError] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [showCrowdModal, setShowCrowdModal] = useState(false)
+  const [showRebootModal, setShowRebootModal] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -236,9 +283,14 @@ export default function DashboardApp() {
             </div>
           </div>
           {isLocal && (
-            <button type="button" className="dashboard-hide-btn" onClick={() => api.hideKiosk()}>
-              Hide
-            </button>
+            <>
+              <button type="button" className="dashboard-hide-btn" onClick={() => setShowRebootModal(true)}>
+                Reboot
+              </button>
+              <button type="button" className="dashboard-hide-btn" onClick={() => api.hideKiosk()}>
+                Hide
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -254,6 +306,28 @@ export default function DashboardApp() {
           <StatCard label="Contact Requests" value={formatNumber(stats.contactRequests)} />
           <StatCard label="Server Uptime" value={formatUptime(stats.uptimeSeconds)} />
           <StatCard label="Site Storage" value={formatBytes(stats.storageBytes)} />
+          <StatCard
+            label="CPU Load"
+            value={stats.performance?.loadAvg ? stats.performance.loadAvg[0].toFixed(2) : '—'}
+            sub={stats.performance?.cpuCount ? `of ${stats.performance.cpuCount} cores` : undefined}
+          />
+          <StatCard
+            label="Memory"
+            value={stats.performance?.memUsedPercent != null ? `${stats.performance.memUsedPercent}%` : '—'}
+            sub={
+              stats.performance?.memUsedMB != null
+                ? `${stats.performance.memUsedMB} MB / ${stats.performance.memTotalMB} MB`
+                : undefined
+            }
+          />
+          {stats.performance?.cpuTempC != null && (
+            <StatCard label="CPU Temp" value={`${stats.performance.cpuTempC.toFixed(1)}°C`} />
+          )}
+          <StatCard
+            label="Site Load Speed"
+            value={stats.performance?.avgResponseMs != null ? `${stats.performance.avgResponseMs} ms` : '—'}
+            sub={stats.performance?.lastResponseMs != null ? `last ${stats.performance.lastResponseMs} ms` : undefined}
+          />
           <CrowdIdeasCard summary={stats.crowdIdeasSummary} onOpen={() => setShowCrowdModal(true)} />
           <StatusCard health={stats.health} onOpen={() => setShowDebug(true)} />
           <UsageChart days={last7Days} />
@@ -262,6 +336,7 @@ export default function DashboardApp() {
 
       {showDebug && <DebugModal health={stats?.health} onClose={() => setShowDebug(false)} />}
       {showCrowdModal && <CrowdIdeasModal onClose={() => setShowCrowdModal(false)} />}
+      {showRebootModal && <RebootModal onClose={() => setShowRebootModal(false)} />}
 
       <footer className="dashboard-footer">
         {stats?.serverStartedAt && `Server started ${new Date(stats.serverStartedAt).toLocaleString('en-GB')}`}

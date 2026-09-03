@@ -112,7 +112,7 @@ body {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
   gap: clamp(10px, 1.4vw, 18px);
 }
 
@@ -346,6 +346,39 @@ body {
 
 .wide-card {
   grid-column: span 2;
+}
+
+.reboot-panel-body {
+  padding: 20px 22px 24px;
+}
+
+.reboot-panel-body p {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+.reboot-panel-error {
+  color: #ff4d4d;
+}
+
+.reboot-confirm-btn {
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  background: #ff4d4d;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.reboot-confirm-btn:hover,
+.reboot-confirm-btn:active {
+  background: #e63e3e;
 }
 
 .usage-card {

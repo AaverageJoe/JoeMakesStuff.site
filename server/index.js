@@ -6,6 +6,7 @@ import multer from 'multer'
 import sharp from 'sharp'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
 import crypto from 'crypto'
 import { execFile } from 'child_process'
 import { fileURLToPath } from 'url'
@@ -107,6 +108,68 @@ function getStorageBytes() {
     storageCache = { at: now, bytes: uploadsBytes + dbBytes }
   }
   return storageCache.bytes
+}
+
+// Local system + response-time stats for the rack dashboard's performance
+// tiles. Reads straight from /proc and /sys rather than shelling out to
+// vcgencmd/free, so it stays cheap enough to call on every dashboard poll.
+function getSystemPerformance() {
+  const loadAvg = os.loadavg()
+  const cpuCount = os.cpus().length
+
+  let memTotalKB = os.totalmem() / 1024
+  let memAvailableKB = os.freemem() / 1024
+  try {
+    const meminfo = fs.readFileSync('/proc/meminfo', 'utf8')
+    // MemAvailable (not MemFree) accounts for reclaimable disk cache, which
+    // Linux happily fills with free RAM — using MemFree alone would make
+    // the Pi look constantly near-full even when it isn't.
+    memTotalKB = Number(meminfo.match(/MemTotal:\s+(\d+)/)?.[1]) || memTotalKB
+    memAvailableKB = Number(meminfo.match(/MemAvailable:\s+(\d+)/)?.[1]) ?? memAvailableKB
+  } catch {
+    // Not on Linux (local dev) — fall back to the os.* values above.
+  }
+  const memUsedMB = Math.round((memTotalKB - memAvailableKB) / 1024)
+  const memTotalMB = Math.round(memTotalKB / 1024)
+  const memUsedPercent = memTotalKB ? Math.round((memUsedMB / memTotalMB) * 100) : null
+
+  let cpuTempC = null
+  try {
+    const raw = Number(fs.readFileSync('/sys/class/thermal/thermal_zone0/temp', 'utf8'))
+    cpuTempC = Math.round(raw / 100) / 10
+  } catch {
+    // Not a Pi / no thermal zone exposed — leave null, the dashboard hides the tile.
+  }
+
+  let diskFreeMB = null
+  let diskTotalMB = null
+  try {
+    if (typeof fs.statfsSync === 'function') {
+      const stat = fs.statfsSync(__dirname)
+      diskFreeMB = Math.round((stat.bfree * stat.bsize) / 1024 / 1024)
+      diskTotalMB = Math.round((stat.blocks * stat.bsize) / 1024 / 1024)
+    }
+  } catch {
+    // Can't determine — leave null rather than fail the whole stats response.
+  }
+
+  const avgResponseMs = responseTimesMs.length
+    ? Math.round(responseTimesMs.reduce((a, b) => a + b, 0) / responseTimesMs.length)
+    : null
+  const lastResponseMs = responseTimesMs.length ? Math.round(responseTimesMs[responseTimesMs.length - 1]) : null
+
+  return {
+    loadAvg,
+    cpuCount,
+    memUsedPercent,
+    memUsedMB,
+    memTotalMB,
+    cpuTempC,
+    diskFreeMB,
+    diskTotalMB,
+    avgResponseMs,
+    lastResponseMs,
+  }
 }
 
 // Runs a handful of real checks against the running server, for the
@@ -225,6 +288,23 @@ const app = express()
 app.set('trust proxy', 'loopback')
 const PORT = process.env.PORT || 4000
 const SERVER_STARTED_AT = Date.now()
+
+// Rolling sample of real request durations, for the "Site Load Speed" tile
+// on the rack dashboard — measured server-side (request in to response
+// flushed) rather than faked, so it actually reflects the CPU-contention
+// slowdowns seen in production. Capped so it tracks recent behaviour, not
+// the server's entire lifetime.
+const RESPONSE_TIME_SAMPLE_CAP = 50
+const responseTimesMs = []
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint()
+  res.on('finish', () => {
+    const ms = Number(process.hrtime.bigint() - start) / 1e6
+    responseTimesMs.push(ms)
+    if (responseTimesMs.length > RESPONSE_TIME_SAMPLE_CAP) responseTimesMs.shift()
+  })
+  next()
+})
 
 app.use(express.json({ limit: '2mb' }))
 app.use(cookieParser())
@@ -793,6 +873,7 @@ app.get('/api/stats/dashboard', (req, res) => {
       printerConnected: isPrinterConnected(),
     },
     health: runHealthChecks(),
+    performance: getSystemPerformance(),
   })
 })
 
@@ -1099,6 +1180,23 @@ app.post('/api/kiosk/hide', (req, res) => {
       res.status(204).end()
     })
   })
+})
+
+// Reboots the Pi itself from the dashboard's Reboot button. Same
+// Host-header gating as Hide, for the same reason — this must only be
+// reachable by the kiosk browser hitting the app directly, never by a
+// remote viewer on joemakesstuff.uk or the LAN. The `joe` user (this
+// service's own user) has passwordless sudo for exactly this kind of
+// system control, so no separate credential is needed.
+app.post('/api/system/reboot', (req, res) => {
+  const host = (req.headers.host || '').split(':')[0]
+  if (host !== 'localhost' && host !== '127.0.0.1') {
+    return res.status(403).json({ error: 'Only available on the Pi itself' })
+  }
+  res.status(204).end()
+  // Let the response above actually reach the browser before the machine
+  // goes down mid-request.
+  setTimeout(() => execFile('sudo', ['reboot']), 500)
 })
 
 // ---------- SEO: sitemap & robots ----------
