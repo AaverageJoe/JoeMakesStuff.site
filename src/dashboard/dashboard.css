@@ -426,6 +426,11 @@ body {
   font-weight: 600;
 }
 
+.contact-message-row-company {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
 .contact-message-row-email {
   color: var(--accent);
   text-decoration: none;

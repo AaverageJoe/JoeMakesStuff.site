@@ -152,6 +152,12 @@ if (!settingsColumns.some((c) => c.name === 'crowd_ideas_reset_at')) {
   db.exec(`ALTER TABLE settings ADD COLUMN crowd_ideas_reset_at TEXT`)
 }
 
+// Migration: `company` was added to the contact form after the initial schema.
+const contactMessageColumns = db.prepare(`PRAGMA table_info(contact_messages)`).all()
+if (!contactMessageColumns.some((c) => c.name === 'company')) {
+  db.exec(`ALTER TABLE contact_messages ADD COLUMN company TEXT NOT NULL DEFAULT ''`)
+}
+
 // Bootstrap the single settings row so callers can always UPDATE it.
 db.prepare(`INSERT OR IGNORE INTO settings (id) VALUES (1)`).run()
 

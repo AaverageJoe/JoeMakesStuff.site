@@ -58,8 +58,8 @@ export const api = {
   trackPageview: (path) =>
     request('/track/pageview', { method: 'POST', body: JSON.stringify({ path }) }).catch(() => {}),
 
-  submitContactMessage: (name, email, message) =>
-    request('/contact', { method: 'POST', body: JSON.stringify({ name, email, message }) }),
+  submitContactMessage: (name, company, email, message) =>
+    request('/contact', { method: 'POST', body: JSON.stringify({ name, company, email, message }) }),
 
   getDashboardStats: () => request('/stats/dashboard'),
   getDashboardCrowdIdeas: () => request('/stats/dashboard/crowd-ideas'),

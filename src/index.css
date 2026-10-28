@@ -1773,6 +1773,12 @@ section {
   color: var(--text-dim);
 }
 
+.contact-form-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .contact-form input,
 .contact-form textarea {
   font-family: var(--font-body);

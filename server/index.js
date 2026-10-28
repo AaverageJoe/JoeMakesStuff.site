@@ -796,9 +796,50 @@ app.delete('/api/settings/:field', requireAuth, (req, res) => {
 
 // ---------- Contact form ----------
 const CONTACT_NAME_MAX = 80
+const CONTACT_COMPANY_MAX = 120
 const CONTACT_EMAIL_MAX = 200
 const CONTACT_MESSAGE_MAX = 2000
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+const CONTACT_TO_EMAIL = process.env.CONTACT_TO_EMAIL || 'joe@makesstuff.uk'
+// Resend's own shared sandbox address — works without verifying a sending
+// domain first. Swap in an address on a verified domain (e.g.
+// notifications@joemakesstuff.uk) once one's set up on the Resend account,
+// for better deliverability and a from-address that isn't resend.dev.
+const CONTACT_FROM_EMAIL = process.env.CONTACT_FROM_EMAIL || 'onboarding@resend.dev'
+
+// Best-effort notification email via the Resend API (api.resend.com) — no
+// SDK, just a plain fetch, since this is the only call this server ever
+// needs to make to it. The visitor's message is already safely in the DB
+// before this runs, so a misconfigured or down mail provider degrades to
+// "check the dashboard" rather than a failed submission.
+async function sendContactEmail({ name, company, email, message }) {
+  if (!RESEND_API_KEY) {
+    console.warn('[contact] RESEND_API_KEY not set — message saved but no email sent.')
+    return
+  }
+  const subject = `New contact form message from ${name}${company ? ` (${company})` : ''}`
+  const text = `Name: ${name}\nCompany: ${company || '—'}\nEmail: ${email}\n\n${message}`
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: CONTACT_FROM_EMAIL,
+      to: CONTACT_TO_EMAIL,
+      reply_to: email,
+      subject,
+      text,
+    }),
+  })
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '')
+    console.warn(`[contact] Resend API error ${resp.status}: ${body}`)
+  }
+}
 
 app.post('/api/contact', (req, res) => {
   // Hidden field real visitors never see or fill in — a bot that fills
@@ -807,6 +848,7 @@ app.post('/api/contact', (req, res) => {
   if (req.body?.website) return res.status(204).end()
 
   const name = (req.body?.name || '').trim().slice(0, CONTACT_NAME_MAX)
+  const company = (req.body?.company || '').trim().slice(0, CONTACT_COMPANY_MAX)
   const email = (req.body?.email || '').trim().slice(0, CONTACT_EMAIL_MAX)
   const message = (req.body?.message || '').trim().slice(0, CONTACT_MESSAGE_MAX)
 
@@ -817,7 +859,15 @@ app.post('/api/contact', (req, res) => {
     return res.status(400).json({ error: 'Please enter a valid email address.' })
   }
 
-  db.prepare(`INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)`).run(name, email, message)
+  db.prepare(`INSERT INTO contact_messages (name, company, email, message) VALUES (?, ?, ?, ?)`).run(
+    name,
+    company,
+    email,
+    message
+  )
+  sendContactEmail({ name, company, email, message }).catch((err) =>
+    console.warn('[contact] Failed to send notification email:', err.message)
+  )
   res.status(204).end()
 })
 

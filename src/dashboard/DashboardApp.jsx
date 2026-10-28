@@ -217,7 +217,10 @@ function ContactMessagesModal({ onClose }) {
             <div key={m.id} className="debug-row contact-message-row">
               <div className="contact-message-row-main">
                 <div className="contact-message-row-top">
-                  <span className="contact-message-row-name">{m.name}</span>
+                  <span className="contact-message-row-name">
+                    {m.name}
+                    {m.company && <span className="contact-message-row-company"> — {m.company}</span>}
+                  </span>
                   <a
                     className="contact-message-row-email"
                     href={`mailto:${m.email}`}

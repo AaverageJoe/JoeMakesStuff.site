@@ -4,11 +4,13 @@ import { useCopy } from '../copy'
 import { api } from '../api'
 
 const NAME_MAX = 80
+const COMPANY_MAX = 120
 const MESSAGE_MAX = 2000
 
 export default function Contact() {
   const { copy } = useCopy()
   const [name, setName] = useState('')
+  const [company, setCompany] = useState('')
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [website, setWebsite] = useState('') // honeypot — left empty by real visitors
@@ -21,9 +23,10 @@ export default function Contact() {
     setSubmitting(true)
     setStatus(null)
     try {
-      await api.submitContactMessage(name.trim(), email.trim(), message.trim())
+      await api.submitContactMessage(name.trim(), company.trim(), email.trim(), message.trim())
       setStatus({ type: 'success', message: "Thanks — I'll get back to you soon." })
       setName('')
+      setCompany('')
       setEmail('')
       setMessage('')
     } catch (err) {
@@ -76,6 +79,18 @@ export default function Contact() {
                 />
               </label>
             </div>
+
+            <label>
+              <span>
+                Company <span className="contact-form-optional">(optional)</span>
+              </span>
+              <input
+                type="text"
+                value={company}
+                maxLength={COMPANY_MAX}
+                onChange={(e) => setCompany(e.target.value)}
+              />
+            </label>
 
             <label>
               Message
