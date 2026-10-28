@@ -794,88 +794,21 @@ app.delete('/api/settings/:field', requireAuth, (req, res) => {
   res.json(db.prepare(`SELECT * FROM settings WHERE id = 1`).get())
 })
 
-// ---------- Contact form ----------
-const CONTACT_NAME_MAX = 80
-const CONTACT_COMPANY_MAX = 120
-const CONTACT_EMAIL_MAX = 200
-const CONTACT_MESSAGE_MAX = 2000
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const RESEND_API_KEY = process.env.RESEND_API_KEY
-const CONTACT_TO_EMAIL = process.env.CONTACT_TO_EMAIL || 'joe@makesstuff.uk'
-// Resend's own shared sandbox address — works without verifying a sending
-// domain first. Swap in an address on a verified domain (e.g.
-// notifications@joemakesstuff.uk) once one's set up on the Resend account,
-// for better deliverability and a from-address that isn't resend.dev.
-const CONTACT_FROM_EMAIL = process.env.CONTACT_FROM_EMAIL || 'onboarding@resend.dev'
-
-// Best-effort notification email via the Resend API (api.resend.com) — no
-// SDK, just a plain fetch, since this is the only call this server ever
-// needs to make to it. The visitor's message is already safely in the DB
-// before this runs, so a misconfigured or down mail provider degrades to
-// "check the dashboard" rather than a failed submission.
-async function sendContactEmail({ name, company, email, message }) {
-  if (!RESEND_API_KEY) {
-    console.warn('[contact] RESEND_API_KEY not set — message saved but no email sent.')
-    return
-  }
-  const subject = `New contact form message from ${name}${company ? ` (${company})` : ''}`
-  const text = `Name: ${name}\nCompany: ${company || '—'}\nEmail: ${email}\n\n${message}`
-  const resp = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: CONTACT_FROM_EMAIL,
-      to: CONTACT_TO_EMAIL,
-      reply_to: email,
-      subject,
-      text,
-    }),
-  })
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '')
-    console.warn(`[contact] Resend API error ${resp.status}: ${body}`)
-  }
-}
-
-app.post('/api/contact', (req, res) => {
-  // Hidden field real visitors never see or fill in — a bot that fills
-  // every field in the form gets a fake success instead of a tell that it
-  // was caught, so it doesn't just adapt and retry.
-  if (req.body?.website) return res.status(204).end()
-
-  const name = (req.body?.name || '').trim().slice(0, CONTACT_NAME_MAX)
-  const company = (req.body?.company || '').trim().slice(0, CONTACT_COMPANY_MAX)
-  const email = (req.body?.email || '').trim().slice(0, CONTACT_EMAIL_MAX)
-  const message = (req.body?.message || '').trim().slice(0, CONTACT_MESSAGE_MAX)
-
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'Name, email and message are all required.' })
-  }
-  if (!EMAIL_RE.test(email)) {
-    return res.status(400).json({ error: 'Please enter a valid email address.' })
-  }
-
-  db.prepare(`INSERT INTO contact_messages (name, company, email, message) VALUES (?, ?, ?, ?)`).run(
-    name,
-    company,
-    email,
-    message
-  )
-  sendContactEmail({ name, company, email, message }).catch((err) =>
-    console.warn('[contact] Failed to send notification email:', err.message)
-  )
-  res.status(204).end()
-})
-
 // ---------- Analytics: tracking + rack dashboard ----------
+const EVENT_TYPES = new Set(['contact_click'])
+
 app.post('/api/track/pageview', (req, res) => {
   const p = (req.body?.path || '').slice(0, 200)
   if (!p || p.startsWith('/admin') || p.startsWith('/dashboard')) return res.status(204).end()
   db.prepare(`INSERT INTO page_views (path, visitor_hash) VALUES (?, ?)`).run(p, hashVisitor(req))
+  res.status(204).end()
+})
+
+app.post('/api/track/event', (req, res) => {
+  const type = req.body?.type
+  if (!EVENT_TYPES.has(type)) return res.status(400).json({ error: 'Unknown event type' })
+  const p = (req.body?.path || '').slice(0, 200)
+  db.prepare(`INSERT INTO events (type, path, visitor_hash) VALUES (?, ?, ?)`).run(type, p, hashVisitor(req))
   res.status(204).end()
 })
 
@@ -894,6 +827,10 @@ app.get('/api/stats/dashboard', (req, res) => {
        ORDER BY date ASC`
     )
     .all()
+  const contactRequests = db
+    .prepare(`SELECT COUNT(*) AS n FROM events WHERE type = 'contact_click'`)
+    .get().n
+
   const topProjectView = db
     .prepare(
       `SELECT path, COUNT(*) AS views
@@ -916,12 +853,6 @@ app.get('/api/stats/dashboard', (req, res) => {
   const crowdIdeasCount = db.prepare(`SELECT COUNT(*) AS n FROM crowd_ideas`).get().n
   const lastCrowdIdea = db.prepare(`SELECT name, idea, created_at FROM crowd_ideas ORDER BY id DESC LIMIT 1`).get()
 
-  const contactMessagesCount = db.prepare(`SELECT COUNT(*) AS n FROM contact_messages`).get().n
-  const unreadContactMessages = db.prepare(`SELECT COUNT(*) AS n FROM contact_messages WHERE read = 0`).get().n
-  const lastContactMessage = db
-    .prepare(`SELECT name, message, created_at FROM contact_messages ORDER BY id DESC LIMIT 1`)
-    .get()
-
   res.json({
     uptimeSeconds: Math.floor((Date.now() - SERVER_STARTED_AT) / 1000),
     serverStartedAt: new Date(SERVER_STARTED_AT).toISOString(),
@@ -929,6 +860,7 @@ app.get('/api/stats/dashboard', (req, res) => {
     uniqueVisitors,
     todayViews,
     last7Days,
+    contactRequests,
     storageBytes: getStorageBytes(),
     mostViewedProject,
     projectCount,
@@ -939,13 +871,6 @@ app.get('/api/stats/dashboard', (req, res) => {
       lastIdea: lastCrowdIdea?.idea ?? null,
       lastCreatedAt: lastCrowdIdea?.created_at ?? null,
       printerConnected: isPrinterConnected(),
-    },
-    contactMessagesSummary: {
-      count: contactMessagesCount,
-      unread: unreadContactMessages,
-      lastName: lastContactMessage?.name ?? null,
-      lastMessage: lastContactMessage?.message ?? null,
-      lastCreatedAt: lastContactMessage?.created_at ?? null,
     },
     health: runHealthChecks(),
     performance: getSystemPerformance(),
@@ -965,20 +890,6 @@ app.get('/api/stats/dashboard/crowd-ideas', (req, res) => {
 
 app.delete('/api/stats/dashboard/crowd-ideas/:id', (req, res) => {
   db.prepare(`DELETE FROM crowd_ideas WHERE id = ?`).run(req.params.id)
-  res.status(204).end()
-})
-
-// Same pattern for the dashboard's Messages modal. Fetching the list also
-// marks everything currently unread as read — opening the inbox clears the
-// "new" badge, same as any ordinary mail client.
-app.get('/api/stats/dashboard/contact-messages', (req, res) => {
-  db.prepare(`UPDATE contact_messages SET read = 1 WHERE read = 0`).run()
-  const messages = db.prepare(`SELECT * FROM contact_messages ORDER BY id DESC LIMIT 500`).all()
-  res.json(messages)
-})
-
-app.delete('/api/stats/dashboard/contact-messages/:id', (req, res) => {
-  db.prepare(`DELETE FROM contact_messages WHERE id = ?`).run(req.params.id)
   res.status(204).end()
 })
 

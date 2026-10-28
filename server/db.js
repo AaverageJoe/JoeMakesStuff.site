@@ -126,17 +126,6 @@ db.exec(`
     image_url TEXT,
     position INTEGER NOT NULL DEFAULT 0
   );
-
-  CREATE TABLE IF NOT EXISTS contact_messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    message TEXT NOT NULL,
-    read INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at);
 `)
 
 // Migration: `visible` was added after the initial schema — existing
@@ -150,12 +139,6 @@ if (!projectColumns.some((c) => c.name === 'visible')) {
 const settingsColumns = db.prepare(`PRAGMA table_info(settings)`).all()
 if (!settingsColumns.some((c) => c.name === 'crowd_ideas_reset_at')) {
   db.exec(`ALTER TABLE settings ADD COLUMN crowd_ideas_reset_at TEXT`)
-}
-
-// Migration: `company` was added to the contact form after the initial schema.
-const contactMessageColumns = db.prepare(`PRAGMA table_info(contact_messages)`).all()
-if (!contactMessageColumns.some((c) => c.name === 'company')) {
-  db.exec(`ALTER TABLE contact_messages ADD COLUMN company TEXT NOT NULL DEFAULT ''`)
 }
 
 // Bootstrap the single settings row so callers can always UPDATE it.
