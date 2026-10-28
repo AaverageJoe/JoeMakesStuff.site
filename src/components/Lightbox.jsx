@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function Lightbox({ images, index, onClose, onNavigate }) {
   const item = images[index]
@@ -21,7 +22,11 @@ export default function Lightbox({ images, index, onClose, onNavigate }) {
 
   const filename = item.url.split('/').pop()
 
-  return (
+  // Rendered into document.body, not in place — fixed-position overlays get
+  // trapped (clipped, and knocked out of the page's real stacking order)
+  // by any ancestor with a transform/filter/mask, like the blueprint-grid
+  // fade mask on the Tiny Builds section. A portal sidesteps that entirely.
+  return createPortal(
     <div className="lightbox-backdrop" onClick={onClose}>
       <button className="lightbox-close" onClick={onClose} aria-label="Close">
         ✕
@@ -74,6 +79,7 @@ export default function Lightbox({ images, index, onClose, onNavigate }) {
           {index + 1} / {images.length}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   )
 }

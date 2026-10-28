@@ -1,6 +1,6 @@
 // Fill in your real contact details here.
 export const CONTACT = {
-  email: 'YOUR_EMAIL@joemakesstuff.co.uk',
+  email: 'joe@makesstuff.uk',
   phone: '',
   instagram: '',
   linkedin: '',

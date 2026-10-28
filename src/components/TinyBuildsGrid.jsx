@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Lightbox from './Lightbox'
 
 // Growth is a plain transform: scale() on the tile itself — it stays in its
 // own grid cell and visually overlaps its neighbours rather than changing
@@ -11,6 +12,7 @@ const prefersReducedMotion =
 export default function TinyBuildsGrid({ items }) {
   const [focusedId, setFocusedId] = useState(null)
   const [autoPlaying, setAutoPlaying] = useState(!prefersReducedMotion)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
   const resumeTimerRef = useRef(null)
   const focusedIndexRef = useRef(-1)
 
@@ -58,16 +60,28 @@ export default function TinyBuildsGrid({ items }) {
         const isNeighbor =
           !isFocused && focusedIndex !== -1 && (i === focusedIndex - 1 || i === focusedIndex + 1)
         return (
-          <div
+          <button
+            type="button"
             className={`tiny-item${isFocused ? ' is-focused' : ''}${isNeighbor ? ' is-neighbor' : ''}`}
             key={item.id}
             onMouseEnter={() => handleEnter(item.id)}
             onMouseLeave={handleLeave}
+            onClick={() => setLightboxIndex(i)}
+            aria-label="Expand image"
           >
             <img src={item.url} alt="Tiny build" loading="lazy" />
-          </div>
+          </button>
         )
       })}
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          images={items}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+        />
+      )}
     </div>
   )
 }
