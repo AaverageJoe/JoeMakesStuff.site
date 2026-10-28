@@ -167,6 +167,84 @@ function CrowdIdeasModal({ onClose }) {
   )
 }
 
+function ContactMessagesCard({ summary, onOpen }) {
+  const count = summary?.count ?? 0
+  const unread = summary?.unread ?? 0
+  return (
+    <button type="button" className="stat-card status-card" onClick={onOpen}>
+      <div className="stat-label">Messages</div>
+      <div className="stat-value">{formatNumber(count)}</div>
+      <div className="stat-sub">{unread > 0 ? `${unread} new` : 'Tap to view'}</div>
+    </button>
+  )
+}
+
+function ContactMessagesModal({ onClose }) {
+  const [messages, setMessages] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    api
+      .getDashboardContactMessages()
+      .then(setMessages)
+      .catch(() => setError("Can't load messages."))
+  }, [])
+
+  const handleDelete = async (id) => {
+    setError('')
+    try {
+      await api.deleteDashboardContactMessage(id)
+      setMessages((prev) => prev.filter((m) => m.id !== id))
+    } catch {
+      setError('Could not delete that message.')
+    }
+  }
+
+  return (
+    <div className="debug-overlay" onClick={onClose}>
+      <div className="debug-panel crowd-ideas-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="debug-panel-header">
+          <h2>Messages {messages ? `(${messages.length})` : ''}</h2>
+          <button type="button" className="debug-close" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        {error && <div className="crowd-ideas-panel-error">{error}</div>}
+        <div className="debug-log">
+          {messages === null && !error && <div className="debug-row">Loading…</div>}
+          {messages?.length === 0 && <div className="debug-row">No messages yet.</div>}
+          {messages?.map((m) => (
+            <div key={m.id} className="debug-row contact-message-row">
+              <div className="contact-message-row-main">
+                <div className="contact-message-row-top">
+                  <span className="contact-message-row-name">{m.name}</span>
+                  <a
+                    className="contact-message-row-email"
+                    href={`mailto:${m.email}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {m.email}
+                  </a>
+                  <span className="contact-message-row-time">{formatIdeaTime(m.created_at)}</span>
+                </div>
+                <div className="contact-message-row-text">{m.message}</div>
+              </div>
+              <button
+                type="button"
+                className="crowd-ideas-row-delete"
+                onClick={() => handleDelete(m.id)}
+                aria-label={`Delete message from ${m.name}`}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function RebootModal({ onClose }) {
   const [rebooting, setRebooting] = useState(false)
   const [error, setError] = useState('')
@@ -238,6 +316,7 @@ export default function DashboardApp() {
   const [error, setError] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [showCrowdModal, setShowCrowdModal] = useState(false)
+  const [showContactModal, setShowContactModal] = useState(false)
   const [showRebootModal, setShowRebootModal] = useState(false)
 
   useEffect(() => {
@@ -303,7 +382,7 @@ export default function DashboardApp() {
           <StatCard label="Total Site Visitors" value={formatNumber(stats.uniqueVisitors)} />
           <StatCard label="Total Page Views" value={formatNumber(stats.totalPageViews)} />
           <StatCard label="Visits Today" value={formatNumber(stats.todayViews)} />
-          <StatCard label="Contact Requests" value={formatNumber(stats.contactRequests)} />
+          <ContactMessagesCard summary={stats.contactMessagesSummary} onOpen={() => setShowContactModal(true)} />
           <StatCard label="Server Uptime" value={formatUptime(stats.uptimeSeconds)} />
           <StatCard label="Site Storage" value={formatBytes(stats.storageBytes)} />
           <StatCard
@@ -336,6 +415,7 @@ export default function DashboardApp() {
 
       {showDebug && <DebugModal health={stats?.health} onClose={() => setShowDebug(false)} />}
       {showCrowdModal && <CrowdIdeasModal onClose={() => setShowCrowdModal(false)} />}
+      {showContactModal && <ContactMessagesModal onClose={() => setShowContactModal(false)} />}
       {showRebootModal && <RebootModal onClose={() => setShowRebootModal(false)} />}
 
       <footer className="dashboard-footer">

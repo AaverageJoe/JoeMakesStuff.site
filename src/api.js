@@ -57,12 +57,15 @@ export const api = {
 
   trackPageview: (path) =>
     request('/track/pageview', { method: 'POST', body: JSON.stringify({ path }) }).catch(() => {}),
-  trackEvent: (type, path) =>
-    request('/track/event', { method: 'POST', body: JSON.stringify({ type, path }) }).catch(() => {}),
+
+  submitContactMessage: (name, email, message) =>
+    request('/contact', { method: 'POST', body: JSON.stringify({ name, email, message }) }),
 
   getDashboardStats: () => request('/stats/dashboard'),
   getDashboardCrowdIdeas: () => request('/stats/dashboard/crowd-ideas'),
   deleteDashboardCrowdIdea: (id) => request(`/stats/dashboard/crowd-ideas/${id}`, { method: 'DELETE' }),
+  getDashboardContactMessages: () => request('/stats/dashboard/contact-messages'),
+  deleteDashboardContactMessage: (id) => request(`/stats/dashboard/contact-messages/${id}`, { method: 'DELETE' }),
   hideKiosk: () => request('/kiosk/hide', { method: 'POST' }),
   rebootServer: () => request('/system/reboot', { method: 'POST' }),
 
