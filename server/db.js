@@ -141,6 +141,17 @@ if (!settingsColumns.some((c) => c.name === 'crowd_ideas_reset_at')) {
   db.exec(`ALTER TABLE settings ADD COLUMN crowd_ideas_reset_at TEXT`)
 }
 
+// Migration: hero banner video fields were added after the initial schema.
+if (!settingsColumns.some((c) => c.name === 'hero_banner_video_url')) {
+  db.exec(`ALTER TABLE settings ADD COLUMN hero_banner_video_url TEXT`)
+}
+if (!settingsColumns.some((c) => c.name === 'hero_banner_loop')) {
+  db.exec(`ALTER TABLE settings ADD COLUMN hero_banner_loop INTEGER NOT NULL DEFAULT 1`)
+}
+if (!settingsColumns.some((c) => c.name === 'hero_banner_opacity')) {
+  db.exec(`ALTER TABLE settings ADD COLUMN hero_banner_opacity REAL NOT NULL DEFAULT 0.4`)
+}
+
 // Bootstrap the single settings row so callers can always UPDATE it.
 db.prepare(`INSERT OR IGNORE INTO settings (id) VALUES (1)`).run()
 

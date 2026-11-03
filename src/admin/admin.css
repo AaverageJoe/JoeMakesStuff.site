@@ -160,6 +160,27 @@
   border-color: var(--accent);
 }
 
+.admin-field input[type='range'] {
+  background: none;
+  border: none;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.admin-checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-checkbox-field input[type='checkbox'] {
+  width: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
 .admin-color-row {
   display: flex;
   gap: 10px;

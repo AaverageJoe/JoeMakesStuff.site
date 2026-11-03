@@ -9,11 +9,26 @@ export default function Hero() {
 
   return (
     <section id="top" className="hero">
-      {settings.hero_bg_url && (
+      {settings.hero_banner_video_url ? (
         <>
-          <img className="hero-bg" src={settings.hero_bg_url} alt="" />
+          <video
+            className="hero-bg"
+            src={settings.hero_banner_video_url}
+            style={{ opacity: settings.hero_banner_opacity ?? 0.4 }}
+            autoPlay
+            muted
+            playsInline
+            loop={!!settings.hero_banner_loop}
+          />
           <div className="hero-bg-scrim" />
         </>
+      ) : (
+        settings.hero_bg_url && (
+          <>
+            <img className="hero-bg" src={settings.hero_bg_url} alt="" />
+            <div className="hero-bg-scrim" />
+          </>
+        )
       )}
       <div className="container hero-inner">
         <div className="eyebrow">{copy.hero_eyebrow}</div>

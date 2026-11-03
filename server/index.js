@@ -729,7 +729,7 @@ app.get('/api/settings', (req, res) => {
 })
 
 app.put('/api/settings', requireAuth, (req, res) => {
-  const { background_color, font_family } = req.body || {}
+  const { background_color, font_family, hero_banner_loop, hero_banner_opacity } = req.body || {}
   const updates = []
   const values = []
 
@@ -747,6 +747,18 @@ app.put('/api/settings', requireAuth, (req, res) => {
     updates.push('font_family = ?')
     values.push(font_family)
   }
+  if ('hero_banner_loop' in (req.body || {})) {
+    updates.push('hero_banner_loop = ?')
+    values.push(hero_banner_loop ? 1 : 0)
+  }
+  if ('hero_banner_opacity' in (req.body || {})) {
+    const opacity = Number(hero_banner_opacity)
+    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
+      return res.status(400).json({ error: 'hero_banner_opacity must be a number between 0 and 1' })
+    }
+    updates.push('hero_banner_opacity = ?')
+    values.push(opacity)
+  }
   if (updates.length === 0) return res.status(400).json({ error: 'No editable fields provided' })
 
   updates.push(`updated_at = datetime('now')`)
@@ -754,7 +766,7 @@ app.put('/api/settings', requireAuth, (req, res) => {
   res.json(db.prepare(`SELECT * FROM settings WHERE id = 1`).get())
 })
 
-const SETTINGS_ASSET_FIELDS = ['favicon_url', 'hero_bg_url']
+const SETTINGS_ASSET_FIELDS = ['favicon_url', 'hero_bg_url', 'hero_banner_video_url']
 const settingsStorage = multer.diskStorage({
   destination: (req, _file, cb) => {
     const dir = path.join(UPLOADS_DIR, 'site')
@@ -769,7 +781,7 @@ const settingsStorage = multer.diskStorage({
 })
 const settingsUpload = multer({
   storage: settingsStorage,
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB — covers a favicon or a hero gif
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB — covers a favicon/hero gif, or a hero banner video
   fileFilter: (req, file, cb) => {
     const target = req.body.target || req.query.target
     if (!SETTINGS_ASSET_FIELDS.includes(target)) return cb(new Error('Invalid target field'))
